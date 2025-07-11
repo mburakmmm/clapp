@@ -1,0 +1,52 @@
+# MANIFEST.in - PyPI packaging için dosya listesi
+
+# Temel dosyalar
+include README.md
+include LICENSE
+include requirements.txt
+include version.json
+include *.cursorrules
+include packaging.cursorrules
+
+# Python dosyaları
+include *.py
+recursive-include . *.py
+
+# Konfigürasyon dosyaları
+include *.json
+include *.yaml
+include *.yml
+include *.toml
+
+# Dokümantasyon
+include docs/*
+recursive-include docs *
+
+# Örnek uygulamalar (opsiyonel)
+recursive-include apps *.json
+recursive-include apps *.py
+recursive-include apps *.lua
+recursive-include apps *.md
+
+# Geçici dosyaları hariç tut
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude __pycache__
+global-exclude .git*
+global-exclude .DS_Store
+global-exclude Thumbs.db
+global-exclude *.tmp
+global-exclude *.log
+global-exclude *.old
+global-exclude *.bak
+global-exclude *.backup
+
+# Test dosyalarını hariç tut
+global-exclude tests/*
+global-exclude test_*
+global-exclude *_test.py
+
+# Build dosyalarını hariç tut
+global-exclude build/*
+global-exclude dist/*
+global-exclude *.egg-info/* 

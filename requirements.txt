@@ -1,0 +1,7 @@
+# clapp paket yöneticisi bağımlılıkları
+
+# GUI framework (Flet)
+flet>=0.21.0
+
+# Tip kontrolü için (opsiyonel)
+typing-extensions>=4.0.0 
