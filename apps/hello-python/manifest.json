@@ -1,8 +1,0 @@
-{
-  "name": "hello-python",
-  "version": "1.0.0",
-  "language": "python",
-  "entry": "main.py",
-  "description": "Basit Python merhaba dünya uygulaması",
-  "dependencies": []
-} 

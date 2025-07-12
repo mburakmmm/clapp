@@ -4,7 +4,7 @@ publish_command.py - clapp Publish Command
 
 Bu modül 'clapp publish <folder>' komutunu uygular.
 Bir uygulama klasörünü validate edip packages/ klasörüne kopyalar
-ve index.json'u günceller.
+ve index.json'u günceller. Opsiyonel olarak GitHub'a push eder.
 """
 
 import os
@@ -104,13 +104,52 @@ def update_index() -> Tuple[bool, str]:
     except Exception as e:
         return False, f"Index script çalıştırılamadı: {e}"
 
-def publish_app(folder_path: str, force: bool = False) -> Tuple[bool, str]:
+def push_to_github_repo(app_name: str, app_version: str) -> Tuple[bool, str]:
+    """
+    Değişiklikleri GitHub'a push eder
+    
+    Returns:
+        (success, message)
+    """
+    try:
+        print("4️⃣ GitHub'a push ediliyor...")
+        
+        # Git durumunu kontrol et
+        result = subprocess.run(['git', 'status', '--porcelain'], 
+                              capture_output=True, text=True, cwd=".")
+        
+        if not result.stdout.strip():
+            return True, "Değişiklik yok, push gerekmiyor"
+        
+        # Değişiklikleri ekle
+        subprocess.run(['git', 'add', 'packages/', 'index.json'], 
+                      check=True, cwd=".")
+        
+        # Commit oluştur
+        commit_message = f"📦 Publish {app_name} v{app_version}\n\n- {app_name} uygulaması packages/ klasörüne eklendi\n- index.json güncellendi\n- Otomatik publish işlemi"
+        
+        subprocess.run(['git', 'commit', '-m', commit_message], 
+                      check=True, cwd=".")
+        
+        # Push et
+        subprocess.run(['git', 'push', 'origin', 'main'], 
+                      check=True, cwd=".")
+        
+        return True, "GitHub'a başarıyla push edildi"
+        
+    except subprocess.CalledProcessError as e:
+        return False, f"Git işlemi hatası: {e}"
+    except Exception as e:
+        return False, f"Push hatası: {e}"
+
+def publish_app(folder_path: str, force: bool = False, push_to_github: bool = False) -> Tuple[bool, str]:
     """
     Ana publish fonksiyonu
     
     Args:
         folder_path: Publish edilecek uygulama klasörü
         force: Zorla üzerine yaz
+        push_to_github: GitHub'a push et
         
     Returns:
         (success, message)
@@ -143,19 +182,28 @@ def publish_app(folder_path: str, force: bool = False) -> Tuple[bool, str]:
     if not index_success:
         return False, index_message
     
+    # 4. GitHub'a push (opsiyonel)
+    if push_to_github:
+        push_success, push_message = push_to_github_repo(app_name, app_version)
+        if not push_success:
+            print(f"⚠️  {push_message}")
+            return True, f"🎉 '{app_name}' yerel olarak publish edildi! GitHub push başarısız."
+    
     return True, f"🎉 '{app_name}' başarıyla publish edildi! Index güncellendi."
 
 def main():
     """CLI entry point"""
     if len(sys.argv) < 2:
-        print("Kullanım: python publish_command.py <folder_path>")
+        print("Kullanım: python publish_command.py <folder_path> [--push]")
         print("Örnek: python publish_command.py ./my-app")
+        print("Örnek: python publish_command.py ./my-app --push")
         sys.exit(1)
     
     folder_path = sys.argv[1]
     force = "--force" in sys.argv
+    push_to_github = "--push" in sys.argv
     
-    success, message = publish_app(folder_path, force)
+    success, message = publish_app(folder_path, force, push_to_github)
     
     print("\n" + "=" * 50)
     if success:
