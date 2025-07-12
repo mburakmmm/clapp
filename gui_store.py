@@ -100,53 +100,8 @@ def fetch_packages_from_github():
             return data.get("packages", [])
     except Exception as e:
         print(f"GitHub'dan paket listesi alınamadı: {e}")
-        # Fallback: örnek paketler
-        return get_example_packages()
-
-def get_example_packages():
-    """Örnek paketler (GitHub erişimi olmadığında)"""
-    return [
-        {
-            "name": "hello-world",
-            "version": "1.0.0",
-            "language": "python",
-            "description": "Basit merhaba dünya uygulaması",
-            "author": "clapp-team",
-            "dependencies": [],
-            "download_url": "demo://hello-world.clapp.zip",  # Demo URL
-            "category": "demo"
-        },
-        {
-            "name": "text-editor",
-            "version": "2.1.0",
-            "language": "python",
-            "description": "Basit metin editörü uygulaması",
-            "author": "clapp-team",
-            "dependencies": [],
-            "download_url": "demo://text-editor.clapp.zip",  # Demo URL
-            "category": "productivity"
-        },
-        {
-            "name": "calculator",
-            "version": "1.5.0",
-            "language": "python",
-            "description": "Gelişmiş hesap makinesi uygulaması",
-            "author": "clapp-team",
-            "dependencies": [],
-            "download_url": "demo://calculator.clapp.zip",  # Demo URL
-            "category": "utility"
-        },
-        {
-            "name": "file-manager",
-            "version": "3.0.0",
-            "language": "python",
-            "description": "Basit dosya yöneticisi uygulaması",
-            "author": "clapp-team",
-            "dependencies": [],
-            "download_url": "demo://file-manager.clapp.zip",  # Demo URL
-            "category": "system"
-        }
-    ]
+        # Hata durumunda boş liste döndür
+        return []
 
 def create_packages_content(packages, page):
     """Paket kartlarını içeren içerik oluştur"""
@@ -298,11 +253,6 @@ def install_package(package, page):
     
     if not download_url:
         show_snackbar(page, f"❌ {name} için indirme linki bulunamadı", is_error=True)
-        return
-    
-    # Demo URL kontrolü
-    if download_url.startswith("demo://"):
-        show_snackbar(page, f"📦 {name} - Demo paket (gerçek yükleme yapılmadı)", is_error=False)
         return
     
     def install_in_thread():

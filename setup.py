@@ -33,7 +33,7 @@ setup(
     name="clapp",
     version=VERSION,
     author=AUTHOR,
-    author_email="burak@example.com",
+    author_email="mburakmemiscy@gmail.com",
     description="Lightweight cross-language app manager for Python and Lua",
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
@@ -42,10 +42,12 @@ setup(
         "Bug Tracker": "https://github.com/mburakmmm/clapp/issues",
         "Documentation": "https://github.com/mburakmmm/clapp/blob/main/README.md",
         "Source Code": "https://github.com/mburakmmm/clapp",
+        "Package Repository": "https://github.com/mburakmmm/clapp-packages",
+        "Changelog": "https://github.com/mburakmmm/clapp/blob/main/CHANGELOG.md",
     },
     
     # Paket bilgileri
-    packages=find_packages(exclude=["tests*", "apps*"]),
+    packages=find_packages(exclude=["tests*", "apps*", "packages-repo-files*"]),
     py_modules=[
         "main",
         "clapp_core",
@@ -57,8 +59,11 @@ setup(
         "installer",
         "remote_registry",
         "cli_commands",
-        "gui_main",
-        "gui_appstore",
+        "main_gui",
+        "gui_dashboard",
+        "gui_store",
+        "gui_developer",
+        "gui_tools",
         "gui_settings",
         "gui_about",
         "gui_utils",
@@ -81,8 +86,8 @@ setup(
     
     # Gereksinimler
     install_requires=[
-        "flet>=0.21.0",
-        "typing-extensions>=4.0.0",
+        "flet>=0.21.0,<1.0.0",
+        "typing-extensions>=4.0.0; python_version<'3.10'",
     ],
     
     # Ek gereksinimler
@@ -92,9 +97,15 @@ setup(
             "black>=22.0.0",
             "flake8>=4.0.0",
             "mypy>=0.950",
+            "pre-commit>=2.20.0",
         ],
         "gui": [
-            "flet>=0.21.0",
+            "flet>=0.21.0,<1.0.0",
+        ],
+        "test": [
+            "pytest>=7.0.0",
+            "pytest-cov>=4.0.0",
+            "coverage>=6.0.0",
         ],
     },
     
@@ -125,7 +136,9 @@ setup(
         "Topic :: System :: Software Distribution",
         "Topic :: Utilities",
         "Environment :: Console",
-        "Environment :: X11 Applications",
+        "Environment :: X11 Applications :: Qt",
+        "Natural Language :: Turkish",
+        "Natural Language :: English",
     ],
     
     # Anahtar kelimeler
@@ -139,6 +152,10 @@ setup(
         "cli",
         "lightweight",
         "flet",
+        "desktop",
+        "applications",
+        "manifest",
+        "dependency",
     ],
     
     # Lisans
@@ -146,4 +163,9 @@ setup(
     
     # Proje durumu
     zip_safe=False,
+    
+    # Manifest dosyası
+    data_files=[
+        ("", ["version.json"]),
+    ],
 ) 

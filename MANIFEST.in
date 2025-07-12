@@ -3,50 +3,42 @@
 # Temel dosyalar
 include README.md
 include LICENSE
-include requirements.txt
 include version.json
-include *.cursorrules
-include packaging.cursorrules
-
-# Python dosyaları
+include requirements.txt
+include MANIFEST.in
+include pyproject.toml
+include setup.py
 include *.py
-recursive-include . *.py
-
-# Konfigürasyon dosyaları
+include *.md
+include *.txt
 include *.json
-include *.yaml
-include *.yml
-include *.toml
 
-# Dokümantasyon
-include docs/*
-recursive-include docs *
+recursive-include . *.py
+recursive-include . *.json
+recursive-include . *.md
+recursive-include . *.txt
 
-# Örnek uygulamalar (opsiyonel)
-recursive-include apps *.json
-recursive-include apps *.py
-recursive-include apps *.lua
-recursive-include apps *.md
+# Exclude development files
+exclude .gitignore
+exclude .cursorrules
+exclude dev.cursorrules
+exclude gui.cursorrules
+exclude packaging.cursorrules
+exclude GITHUB_SETUP.md
+exclude __pycache__
+recursive-exclude . __pycache__
+recursive-exclude . *.pyc
+recursive-exclude . *.pyo
+recursive-exclude . *.orig
+recursive-exclude . *.rej
+recursive-exclude . .git*
+recursive-exclude . .DS_Store
 
-# Geçici dosyaları hariç tut
-global-exclude *.pyc
-global-exclude *.pyo
-global-exclude __pycache__
-global-exclude .git*
-global-exclude .DS_Store
-global-exclude Thumbs.db
-global-exclude *.tmp
-global-exclude *.log
-global-exclude *.old
-global-exclude *.bak
-global-exclude *.backup
-
-# Test dosyalarını hariç tut
-global-exclude tests/*
-global-exclude test_*
-global-exclude *_test.py
-
-# Build dosyalarını hariç tut
-global-exclude build/*
-global-exclude dist/*
-global-exclude *.egg-info/* 
+# Exclude test and development directories
+prune tests
+prune apps
+prune packages-repo-files
+prune .git
+prune build
+prune dist
+prune *.egg-info 
