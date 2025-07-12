@@ -1,6 +1,26 @@
 import json
 import os
 
+def load_manifest(manifest_path):
+    """
+    Manifest dosyasını yükler ve parse eder.
+    
+    Args:
+        manifest_path (str): Manifest dosyasının yolu
+        
+    Returns:
+        dict: Parse edilmiş manifest dictionary'si
+        
+    Raises:
+        FileNotFoundError: Dosya bulunamadığında
+        json.JSONDecodeError: JSON parse hatası
+    """
+    if not os.path.exists(manifest_path):
+        raise FileNotFoundError(f"Manifest dosyası bulunamadı: {manifest_path}")
+    
+    with open(manifest_path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
 def validate_manifest(manifest):
     """
     Manifest dosyasının gerekli alanları içerip içermediğini ve tiplerinin doğru olup olmadığını kontrol eder.

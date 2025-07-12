@@ -1,0 +1,26 @@
+[
+  {
+    "name": "calculator-python",
+    "version": "1.2.0",
+    "language": "python",
+    "description": "Basit komut satırı hesap makinesi",
+    "entry": "calculator.py",
+    "dependencies": [
+      "hello-python"
+    ],
+    "folder": "calculator-python",
+    "repo_url": "https://github.com/mburakmmm/clapp-packages",
+    "subdir": "calculator-python"
+  },
+  {
+    "name": "hello-python",
+    "version": "1.0.0",
+    "language": "python",
+    "description": "Basit Python merhaba dünya uygulaması",
+    "entry": "main.py",
+    "dependencies": [],
+    "folder": "hello-python",
+    "repo_url": "https://github.com/mburakmmm/clapp-packages",
+    "subdir": "hello-python"
+  }
+]

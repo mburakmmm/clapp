@@ -16,7 +16,8 @@ from clapp_core import list_apps, run_app
 from cli_commands import (
     install_from_remote, upgrade_package, publish_package,
     search_remote_packages, show_package_info, list_all_packages,
-    check_system_health
+    check_system_health, handle_publish_command, handle_install_command,
+    handle_uninstall_command, handle_list_command, publish_to_repository
 )
 from installer import install_package, uninstall_package, install_from_directory
 from remote_registry import list_remote_packages
@@ -30,6 +31,12 @@ from doctor_command import run_doctor
 from clean_command import run_clean
 from where_command import locate_app_path, list_all_app_locations
 from version_command import print_version, print_detailed_version
+
+# Yeni publish.cursorrules komutları
+from publish_command import publish_app
+from install_command import install_app
+from uninstall_command import uninstall_app
+from list_command import list_apps as list_apps_new
 
 def main():
     """Ana CLI fonksiyonu"""
@@ -83,6 +90,10 @@ def main():
     # list komutu
     list_parser = subparsers.add_parser('list', help='Yüklü uygulamaları listele')
     list_parser.add_argument('--all', action='store_true', help='Hem yerel hem uzak paketleri listele')
+    list_parser.add_argument('--format', choices=['table', 'simple', 'json', 'detailed'], 
+                           default='table', help='Çıktı formatı')
+    list_parser.add_argument('--language', help='Dil filtresi (python, lua, vb.)')
+    list_parser.add_argument('--search', help='Arama terimi (ad veya açıklamada)')
     
     # install komutu
     install_parser = subparsers.add_parser('install', help='Uygulama yükle')
@@ -93,6 +104,7 @@ def main():
     # uninstall komutu
     uninstall_parser = subparsers.add_parser('uninstall', help='Uygulama kaldır')
     uninstall_parser.add_argument('app_name', help='Kaldırılacak uygulamanın adı')
+    uninstall_parser.add_argument('--yes', action='store_true', help='Onay sorma')
     
     # upgrade komutu
     upgrade_parser = subparsers.add_parser('upgrade', help='Uygulamayı güncelle')
@@ -165,7 +177,13 @@ def main():
             if args.all:
                 list_all_packages()
             else:
-                list_apps()
+                # Yeni gelişmiş list komutu
+                try:
+                    output = list_apps_new(args.format, args.language, args.search)
+                    print(output)
+                except Exception as e:
+                    print(f"❌ Liste hatası: {e}")
+                    sys.exit(1)
         
         elif args.command == 'install':
             if args.local:
@@ -175,15 +193,16 @@ def main():
                 # Zip dosyası veya URL
                 success, message = install_package(args.source, args.force)
             else:
-                # Uzak paket deposundan yükle
-                success, message = install_from_remote(args.source, args.force)
+                # Yeni install komutu (GitHub'dan index.json ile)
+                success, message = install_app(args.source)
             
             if not success:
                 print(f"❌ {message}")
                 sys.exit(1)
         
         elif args.command == 'uninstall':
-            success, message = uninstall_package(args.app_name)
+            # Yeni uninstall komutu
+            success, message = uninstall_app(args.app_name, args.yes)
             print(message)
             sys.exit(0 if success else 1)
         
@@ -216,7 +235,8 @@ def main():
             sys.exit(0 if success else 1)
         
         elif args.command == 'publish':
-            success, message = publish_package(args.app_path)
+            # Yeni publish komutu
+            success, message = publish_app(args.app_path)
             if not success:
                 print(f"❌ {message}")
                 sys.exit(1)

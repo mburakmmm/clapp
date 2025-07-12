@@ -1,0 +1,8 @@
+{
+  "name": "calculator-python",
+  "version": "1.2.0",
+  "language": "python",
+  "entry": "calculator.py",
+  "description": "Basit komut satırı hesap makinesi",
+  "dependencies": ["hello-python"]
+} 

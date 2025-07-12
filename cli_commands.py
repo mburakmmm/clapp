@@ -6,9 +6,29 @@ from package_registry import list_packages, get_manifest
 from dependency_resolver import get_dependency_report, get_system_dependency_report
 from manifest_validator import validate_manifest_file, get_validation_summary
 
+# Yeni komut modüllerini import et
+from publish_command import publish_app
+from install_command import install_app
+from uninstall_command import uninstall_app
+from list_command import list_apps
+
 def install_from_remote(app_name, force=False):
     """
     Uzak paket deposundan uygulama yükler.
+    
+    Args:
+        app_name (str): Yüklenecek uygulama adı
+        force (bool): Mevcut uygulamanın üzerine yazılmasına izin ver
+        
+    Returns:
+        tuple: (success: bool, message: str)
+    """
+    # Yeni install_command modülünü kullan
+    return install_app(app_name)
+
+def install_from_remote_legacy(app_name, force=False):
+    """
+    Uzak paket deposundan uygulama yükler (eski sistem).
     
     Args:
         app_name (str): Yüklenecek uygulama adı
@@ -56,6 +76,52 @@ def install_from_remote(app_name, force=False):
         print(f"❌ {message}")
     
     return success, message
+
+def uninstall_from_local(app_name, skip_confirmation=False):
+    """
+    Yerel uygulamayı kaldırır.
+    
+    Args:
+        app_name (str): Kaldırılacak uygulama adı
+        skip_confirmation (bool): Onay sorma
+        
+    Returns:
+        tuple: (success: bool, message: str)
+    """
+    # Yeni uninstall_command modülünü kullan
+    return uninstall_app(app_name, skip_confirmation)
+
+def publish_to_repository(app_path):
+    """
+    Uygulamayı repository'e publish eder.
+    
+    Args:
+        app_path (str): Uygulama dizini
+        
+    Returns:
+        tuple: (success: bool, message: str)
+    """
+    # Yeni publish_command modülünü kullan
+    return publish_app(app_path)
+
+def list_installed_apps(format_type="table", language_filter=None, search_term=None):
+    """
+    Kurulu uygulamaları listeler.
+    
+    Args:
+        format_type (str): Çıktı formatı (table, simple, json, detailed)
+        language_filter (str): Dil filtresi
+        search_term (str): Arama terimi
+        
+    Returns:
+        tuple: (success: bool, message: str)
+    """
+    try:
+        output = list_apps(format_type, language_filter, search_term)
+        print(output)
+        return True, "Liste gösterildi"
+    except Exception as e:
+        return False, f"Liste hatası: {e}"
 
 def upgrade_package(app_name):
     """
@@ -233,14 +299,8 @@ def list_all_packages():
     print("📱 Yerel Paketler:")
     print("=" * 30)
     
-    # Yerel paketler
-    local_packages = list_packages()
-    if local_packages:
-        for package in local_packages:
-            print(f"📦 {package['name']} (v{package['version']})")
-            print(f"   💻 {package['language']} - {package['description']}")
-    else:
-        print("Yerel paket bulunamadı")
+    # Yerel paketler - yeni list_command kullan
+    success, message = list_installed_apps("simple")
     
     print(f"\n🌐 Uzak Paketler:")
     print("=" * 30)
@@ -296,6 +356,42 @@ def check_system_health():
         print(f"❌ {invalid_count} geçersiz manifest bulundu")
     
     return True, "Sistem sağlık kontrolü tamamlandı"
+
+# Yeni komut fonksiyonları
+def handle_publish_command(args):
+    """Publish komutunu işler"""
+    if not args.folder:
+        print("❌ Hata: Publish edilecek klasör belirtilmedi")
+        print("Kullanım: clapp publish <folder>")
+        return False, "Klasör belirtilmedi"
+    
+    return publish_to_repository(args.folder)
+
+def handle_install_command(args):
+    """Install komutunu işler"""
+    if not args.app_name:
+        print("❌ Hata: Kurulacak uygulama adı belirtilmedi")
+        print("Kullanım: clapp install <app_name>")
+        return False, "Uygulama adı belirtilmedi"
+    
+    return install_from_remote(args.app_name)
+
+def handle_uninstall_command(args):
+    """Uninstall komutunu işler"""
+    if not args.app_name:
+        print("❌ Hata: Kaldırılacak uygulama adı belirtilmedi")
+        print("Kullanım: clapp uninstall <app_name>")
+        return False, "Uygulama adı belirtilmedi"
+    
+    return uninstall_from_local(args.app_name, args.yes)
+
+def handle_list_command(args):
+    """List komutunu işler"""
+    format_type = getattr(args, 'format', 'table')
+    language_filter = getattr(args, 'language', None)
+    search_term = getattr(args, 'search', None)
+    
+    return list_installed_apps(format_type, language_filter, search_term)
 
 if __name__ == "__main__":
     # Test için örnek kullanım
