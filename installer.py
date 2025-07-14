@@ -7,81 +7,84 @@ import json
 from manifest_validator import validate_manifest_verbose
 from package_registry import app_exists
 
+def find_app_folder(extract_path, app_name):
+    """
+    Zip çıkarıldıktan sonra, extract_path altında **/packages/{app_name} klasörünü bulur.
+    """
+    for root, dirs, files in os.walk(extract_path):
+        if os.path.basename(root) == app_name and os.path.basename(os.path.dirname(root)) == "packages":
+            return root
+    return None
+
+
 def install_package(source, force=False):
     """
     Bir .clapp paketini zip dosyasından veya URL'den yükler.
-    
-    Args:
-        source (str): Yerel zip dosya yolu veya uzak URL
-        force (bool): Mevcut uygulamanın üzerine yazılmasına izin ver
-        
-    Returns:
-        tuple: (success: bool, message: str)
     """
     temp_dir = None
-    
     try:
-        # Geçici dizin oluştur
         temp_dir = tempfile.mkdtemp()
-        
-        # Kaynak türünü belirle (URL mu dosya yolu mu)
         if source.startswith(('http://', 'https://')):
-            # URL'den indir
             zip_path = download_package(source, temp_dir)
             if not zip_path:
                 return False, "Paket indirilemedi"
         else:
-            # Yerel dosya
             if not os.path.exists(source):
                 return False, f"Dosya bulunamadı: {source}"
             zip_path = source
-        
-        # Zip dosyasını çıkart
         extract_path = os.path.join(temp_dir, "extracted")
         success, message = extract_package(zip_path, extract_path)
         if not success:
             return False, message
-        
-        # Manifest'i yükle ve doğrula
-        manifest_path = os.path.join(extract_path, "manifest.json")
-        is_valid, errors = validate_manifest_file(manifest_path)
+
+        # --- YENİ: Doğru app klasörünü bul ---
+        # Önce manifesti bulmak için tüm app klasörlerini tara
+        app_folder = None
+        manifest = None
+        manifest_path = None
+        # Tüm packages altındaki app klasörlerini bul
+        for root, dirs, files in os.walk(extract_path):
+            if "manifest.json" in files:
+                with open(os.path.join(root, "manifest.json"), 'r', encoding='utf-8') as f:
+                    try:
+                        m = json.load(f)
+                        if 'name' in m:
+                            app_folder = root
+                            manifest = m
+                            manifest_path = os.path.join(root, "manifest.json")
+                            break
+                    except Exception:
+                        continue
+        if not app_folder or not manifest:
+            return False, "Uygulama klasörü bulunamadı: manifest.json"
+        app_name = manifest['name']
+
+        # --- YENİ: Sadece packages/{app_name} klasörünü bul ve kopyala ---
+        app_real_folder = find_app_folder(extract_path, app_name)
+        if not app_real_folder:
+            return False, f"Uygulama klasörü bulunamadı: packages/{app_name}"
+
+        # Manifesti doğrula
+        is_valid, errors = validate_manifest_file(os.path.join(app_real_folder, "manifest.json"))
         if not is_valid:
             error_msg = "Manifest doğrulama hatası:\n" + "\n".join(errors)
             return False, error_msg
-        
-        # Manifest'i yükle
-        with open(manifest_path, 'r', encoding='utf-8') as f:
-            manifest = json.load(f)
-        
-        app_name = manifest['name']
-        
-        # Uygulama zaten var mı kontrol et
-        if app_exists(app_name) and not force:
-            return False, f"Uygulama '{app_name}' zaten yüklü. --force kullanarak üzerine yazabilirsiniz."
-        
+
         # Giriş dosyasının varlığını kontrol et
         entry_file = manifest['entry']
-        entry_path = os.path.join(extract_path, entry_file)
+        entry_path = os.path.join(app_real_folder, entry_file)
         if not os.path.exists(entry_path):
             return False, f"Giriş dosyası bulunamadı: {entry_file}"
-        
+
         # Hedef dizini oluştur
         target_dir = os.path.join("apps", app_name)
-        
-        # Mevcut dizini sil (eğer varsa)
         if os.path.exists(target_dir):
             shutil.rmtree(target_dir)
-        
-        # Dosyaları kopyala
-        shutil.copytree(extract_path, target_dir)
-        
+        shutil.copytree(app_real_folder, target_dir)
         return True, f"✅ '{app_name}' başarıyla yüklendi!"
-        
     except Exception as e:
         return False, f"Yükleme hatası: {e}"
-    
     finally:
-        # Geçici dizini temizle
         if temp_dir and os.path.exists(temp_dir):
             shutil.rmtree(temp_dir)
 

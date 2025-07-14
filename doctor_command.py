@@ -20,7 +20,6 @@ from check_env import (
     check_working_directory,
     check_apps_directory,
     check_permissions,
-    check_flet_installation
 )
 
 def check_clapp_config():
@@ -165,13 +164,25 @@ def check_python_modules():
     else:
         return True, f"Tüm gerekli modüller mevcut ({len(found)} modül)"
 
+def check_apps_directory():
+    """apps/ dizinini kontrol eder, yoksa otomatik oluşturur veya bilgi verir"""
+    apps_dir = Path("apps")
+    if apps_dir.exists():
+        return True, "apps/ dizini mevcut"
+    else:
+        try:
+            apps_dir.mkdir(parents=True, exist_ok=True)
+            return True, "apps/ dizini yoktu, otomatik oluşturuldu (ilk kurulum için normal)"
+        except Exception as e:
+            return False, f"apps/ dizini oluşturulamadı: {e}"
+
+
 def run_doctor():
     """Kapsamlı sistem tanılaması yapar"""
     print("🩺 clapp Sistem Tanılaması")
     print("=" * 60)
     print("Sisteminiz clapp için uygun mu kontrol ediliyor...")
     print()
-    
     # Tüm kontroller
     checks = [
         ("Python Sürümü", check_python_version),
@@ -187,93 +198,42 @@ def run_doctor():
         ("Yazma İzinleri", check_permissions),
         ("Disk Alanı", check_disk_space),
         ("Ağ Erişimi", check_network_access),
-        ("Flet Kurulumu", check_flet_installation),
         ("clapp Konfigürasyonu", check_clapp_config),
     ]
-    
     passed = 0
     failed = 0
     warnings = 0
-    
     results = []
-    
     for check_name, check_func in checks:
         try:
-            success, message = check_func()
-            results.append((check_name, success, message))
-            
-            if success:
-                print(f"✅ {check_name}: {message}")
+            ok, msg = check_func()
+            if ok:
+                print(f"✅ {check_name}: {msg}")
                 passed += 1
             else:
-                print(f"❌ {check_name}: {message}")
+                print(f"❌ {check_name}: {msg}")
                 failed += 1
+            results.append((check_name, ok, msg))
         except Exception as e:
-            error_msg = f"Hata - {str(e)}"
-            results.append((check_name, False, error_msg))
-            print(f"⚠️  {check_name}: {error_msg}")
-            warnings += 1
-    
-    # Özet
+            print(f"❌ {check_name}: Kontrol sırasında hata: {e}")
+            failed += 1
+            results.append((check_name, False, str(e)))
     print("\n" + "=" * 60)
-    print("📊 Tanılama Özeti:")
+    print(f"📊 Tanılama Özeti:")
     print(f"✅ Başarılı: {passed}")
     print(f"❌ Başarısız: {failed}")
     print(f"⚠️  Uyarı: {warnings}")
-    
-    # Genel durum
-    if failed == 0 and warnings == 0:
-        print("\n🎉 Mükemmel! Sisteminiz clapp için tamamen hazır.")
-        print("✨ Herhangi bir sorun bulunmadı.")
-    elif failed == 0:
-        print("\n✅ İyi! Sisteminiz clapp için genel olarak uygun.")
-        print("⚠️  Bazı küçük uyarılar var, ancak çalışmaya engel değil.")
-    else:
+    if failed > 0:
         print("\n🔧 Dikkat! Bazı sorunlar bulundu.")
         print("❌ Aşağıdaki sorunları çözmeniz önerilir:")
-    
-    # Detaylı öneriler
-    if failed > 0:
-        print("\n💡 Çözüm Önerileri:")
-        
-        for check_name, success, message in results:
-            if not success:
-                print(f"\n🔧 {check_name}:")
-                print(f"   Sorun: {message}")
-                
-                # Spesifik öneriler
-                if "Python" in check_name and "sürüm" in message.lower():
-                    print("   Çözüm: Python 3.8 veya daha yeni sürüm yükleyin")
-                elif "PATH" in check_name:
-                    print("   Çözüm: Python Scripts dizinini PATH'e ekleyin")
-                    print("   Detay: clapp check-env komutunu çalıştırın")
-                elif "apps/" in check_name:
-                    print("   Çözüm: mkdir apps komutu ile apps dizini oluşturun")
-                elif "Flet" in check_name:
-                    print("   Çözüm: pip install flet komutu ile Flet'i yükleyin")
-                elif "izin" in message.lower():
-                    print("   Çözüm: Dizin izinlerini kontrol edin veya farklı dizinde çalıştırın")
-                elif "disk" in message.lower():
-                    print("   Çözüm: Disk alanı açın veya farklı dizinde çalıştırın")
-                elif "ağ" in message.lower():
-                    print("   Çözüm: İnternet bağlantınızı kontrol edin")
-    
-    # Sonraki adımlar
-    print("\n🚀 Sonraki Adımlar:")
-    if failed == 0:
-        print("• clapp list - Yüklü uygulamaları listeleyin")
-        print("• clapp gui - Grafik arayüzü başlatın")
-        print("• clapp --help - Tüm komutları görün")
+        for name, ok, msg in results:
+            if not ok:
+                print(f"\n🔧 {name}:\n   Sorun: {msg}")
     else:
-        print("• Yukarıdaki sorunları çözün")
-        print("• clapp doctor - Tekrar tanılama çalıştırın")
-        print("• clapp check-env - Temel kontrolleri yapın")
-    
+        print("\n🚀 Her şey yolunda! clapp sorunsuz çalışabilir.")
     print("\n📞 Yardım:")
     print("• GitHub: https://github.com/user/clapp")
     print("• Dokümantasyon: README.md dosyasını okuyun")
-    
-    return failed == 0
 
 if __name__ == "__main__":
     run_doctor() 

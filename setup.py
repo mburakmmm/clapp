@@ -30,7 +30,7 @@ else:
     LONG_DESCRIPTION = "Lightweight cross-language app manager for Python and Lua"
 
 setup(
-    name="clapp",
+    name="clapp-pm",
     version=VERSION,
     author=AUTHOR,
     author_email="mburakmemiscy@gmail.com",
@@ -59,6 +59,10 @@ setup(
         "installer",
         "remote_registry",
         "cli_commands",
+        "publish_command",
+        "install_command",
+        "list_command",
+        "uninstall_command",
         "check_env",
         "post_install_hint",
         "info_command",

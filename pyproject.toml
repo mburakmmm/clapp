@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "clapp"
+name = "clapp-pm"
 dynamic = ["version"]
 description = "Lightweight cross-language app manager for Python and Lua"
 readme = "README.md"
@@ -20,10 +20,8 @@ keywords = [
     "python",
     "lua",
     "cross-language",
-    "gui",
     "cli",
     "lightweight",
-    "flet",
     "desktop",
     "applications"
 ]
@@ -48,7 +46,7 @@ classifiers = [
 ]
 requires-python = ">=3.8"
 dependencies = [
-    "flet>=0.21.0,<1.0.0",
+    "requests>=2.31.0",
     "typing-extensions>=4.0.0; python_version<'3.10'",
 ]
 
@@ -60,9 +58,7 @@ dev = [
     "mypy>=0.950",
     "pre-commit>=2.20.0",
 ]
-gui = [
-    "flet>=0.21.0,<1.0.0",
-]
+
 test = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
