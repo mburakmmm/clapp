@@ -55,7 +55,6 @@ def main():
   clapp list                    # Yüklü uygulamaları listele
   clapp run hello-python        # hello-python uygulamasını çalıştır
   clapp info hello-python       # Uygulama bilgilerini göster
-  clapp gui                     # Grafik arayüzü başlat
 
 🔧 Yönetim Komutları:
   clapp install app.zip         # ZIP dosyasından uygulama yükle
@@ -151,8 +150,7 @@ def main():
     where_parser.add_argument('--check-entry', action='store_true', help='Giriş dosyasını da kontrol et')
     where_parser.add_argument('--open', action='store_true', help='Dosya yöneticisinde aç')
     
-    # gui komutu
-    gui_parser = subparsers.add_parser('gui', help='Grafik arayüzü başlat')
+
     
     # version komutu (yeni)
     version_parser = subparsers.add_parser('version', help='Sürüm bilgisini göster')
@@ -273,19 +271,7 @@ def main():
                 success = list_all_app_locations()
                 sys.exit(0 if success else 1)
         
-        elif args.command == 'gui':
-            print("🖥️  Grafik arayüzü başlatılıyor...")
-            try:
-                import flet as ft
-                from main_gui import main as gui_main
-                ft.app(target=gui_main, view=ft.AppView.FLET_APP)
-            except ImportError:
-                print("❌ Grafik arayüzü için 'flet' kütüphanesi gerekli")
-                print("Yüklemek için: pip install flet")
-                sys.exit(1)
-            except Exception as e:
-                print(f"❌ Grafik arayüzü başlatılamadı: {e}")
-                sys.exit(1)
+
         
         elif args.command == 'version':
             if args.short:

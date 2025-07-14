@@ -188,6 +188,9 @@ config.json
 *.clapp.zip
 clapp-packages-repo/
 
+# Cursor rules
+dev.cursorrules
+
 # Test files
 test_*.py
 *_test.py

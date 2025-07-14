@@ -59,15 +59,6 @@ setup(
         "installer",
         "remote_registry",
         "cli_commands",
-        "main_gui",
-        "gui_dashboard",
-        "gui_store",
-        "gui_developer",
-        "gui_tools",
-        "gui_settings",
-        "gui_about",
-        "gui_utils",
-        "gui_theme",
         "check_env",
         "post_install_hint",
         "info_command",
@@ -86,7 +77,7 @@ setup(
     
     # Gereksinimler
     install_requires=[
-        "flet>=0.21.0,<1.0.0",
+        "requests>=2.31.0",
         "typing-extensions>=4.0.0; python_version<'3.10'",
     ],
     
@@ -98,9 +89,6 @@ setup(
             "flake8>=4.0.0",
             "mypy>=0.950",
             "pre-commit>=2.20.0",
-        ],
-        "gui": [
-            "flet>=0.21.0,<1.0.0",
         ],
         "test": [
             "pytest>=7.0.0",
@@ -136,7 +124,6 @@ setup(
         "Topic :: System :: Software Distribution",
         "Topic :: Utilities",
         "Environment :: Console",
-        "Environment :: X11 Applications :: Qt",
         "Natural Language :: Turkish",
         "Natural Language :: English",
     ],
@@ -148,10 +135,8 @@ setup(
         "python",
         "lua",
         "cross-language",
-        "gui",
         "cli",
         "lightweight",
-        "flet",
         "desktop",
         "applications",
         "manifest",

@@ -1,7 +1,6 @@
 # clapp paket yöneticisi bağımlılıkları
 
-# GUI framework (Flet)
-flet>=0.21.0
+# HTTP istekleri için
 requests>=2.31.0
 
 # Tip kontrolü için (opsiyonel)
