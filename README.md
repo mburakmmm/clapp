@@ -13,7 +13,7 @@ clapp, Python ve Lua uygulamalarını kolayca yükleyip çalıştırmanızı sa�
 ## Kurulum
 
 ```bash
-pip install clapp
+pip install clapp-pm
 ```
 
 ## Temel Kullanım
