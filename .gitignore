@@ -188,6 +188,11 @@ config.json
 *.clapp.zip
 clapp-packages-repo/
 
+# Secrets and tokens
+pypi_token.txt
+.env
+secrets/
+
 # Cursor rules
 dev.cursorrules
 
