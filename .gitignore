@@ -186,6 +186,7 @@ apps/*/
 !apps/calculator-python/
 config.json
 *.clapp.zip
+clapp-packages-repo/
 
 # Test files
 test_*.py

@@ -126,7 +126,7 @@ def main():
     # publish komutu
     publish_parser = subparsers.add_parser('publish', help='Paket yayınla')
     publish_parser.add_argument('app_path', help='Yayınlanacak uygulama dizini')
-    publish_parser.add_argument('--push', action='store_true', help='GitHub\'a otomatik push et')
+    publish_parser.add_argument('--push', action='store_true', help='clapp-packages reposuna otomatik push et')
     
     # remote komutu
     remote_parser = subparsers.add_parser('remote', help='Uzak paket deposunu listele')

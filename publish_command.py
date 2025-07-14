@@ -4,7 +4,7 @@ publish_command.py - clapp Publish Command
 
 Bu modül 'clapp publish <folder>' komutunu uygular.
 Bir uygulama klasörünü validate edip packages/ klasörüne kopyalar
-ve index.json'u günceller. Opsiyonel olarak GitHub'a push eder.
+ve index.json'u günceller. Opsiyonel olarak clapp-packages reposuna push eder.
 """
 
 import os
@@ -104,42 +104,78 @@ def update_index() -> Tuple[bool, str]:
     except Exception as e:
         return False, f"Index script çalıştırılamadı: {e}"
 
-def push_to_github_repo(app_name: str, app_version: str) -> Tuple[bool, str]:
+def push_to_clapp_packages_repo(app_name: str, app_version: str) -> Tuple[bool, str]:
     """
-    Değişiklikleri GitHub'a push eder
+    Değişiklikleri clapp-packages reposuna push eder
     
     Returns:
         (success, message)
     """
     try:
-        print("4️⃣ GitHub'a push ediliyor...")
+        print("4️⃣ clapp-packages reposuna push ediliyor...")
+        
+        # clapp-packages reposunu kontrol et
+        packages_repo_path = "./clapp-packages-repo"
+        
+        # Eğer clapp-packages repo klonlanmamışsa, klonla
+        if not os.path.exists(packages_repo_path):
+            print("📥 clapp-packages reposu klonlanıyor...")
+            subprocess.run([
+                'git', 'clone', 'https://github.com/mburakmmm/clapp-packages.git', 
+                packages_repo_path
+            ], check=True, cwd=".")
+        
+        # packages/ klasörünü clapp-packages reposuna kopyala
+        source_packages = "./packages"
+        target_packages = os.path.join(packages_repo_path, "packages")
+        
+        if os.path.exists(target_packages):
+            shutil.rmtree(target_packages)
+        
+        shutil.copytree(source_packages, target_packages)
+        print(f"✅ packages/ klasörü clapp-packages reposuna kopyalandı")
+        
+        # index.json'u da kopyala
+        if os.path.exists("index.json"):
+            shutil.copy("index.json", os.path.join(packages_repo_path, "index.json"))
+            print("✅ index.json clapp-packages reposuna kopyalandı")
+        
+        # clapp-packages reposuna git işlemleri
+        os.chdir(packages_repo_path)
         
         # Git durumunu kontrol et
         result = subprocess.run(['git', 'status', '--porcelain'], 
-                              capture_output=True, text=True, cwd=".")
+                              capture_output=True, text=True)
         
         if not result.stdout.strip():
+            os.chdir("..")
             return True, "Değişiklik yok, push gerekmiyor"
         
         # Değişiklikleri ekle
-        subprocess.run(['git', 'add', 'packages/', 'index.json'], 
-                      check=True, cwd=".")
+        subprocess.run(['git', 'add', '.'], check=True)
         
         # Commit oluştur
         commit_message = f"📦 Publish {app_name} v{app_version}\n\n- {app_name} uygulaması packages/ klasörüne eklendi\n- index.json güncellendi\n- Otomatik publish işlemi"
         
-        subprocess.run(['git', 'commit', '-m', commit_message], 
-                      check=True, cwd=".")
+        subprocess.run(['git', 'commit', '-m', commit_message], check=True)
         
         # Push et
-        subprocess.run(['git', 'push', 'origin', 'main'], 
-                      check=True, cwd=".")
+        subprocess.run(['git', 'push', 'origin', 'main'], check=True)
         
-        return True, "GitHub'a başarıyla push edildi"
+        # Ana dizine geri dön
+        os.chdir("..")
+        
+        return True, "clapp-packages reposuna başarıyla push edildi"
         
     except subprocess.CalledProcessError as e:
+        # Ana dizine geri dön
+        if os.getcwd() != os.path.abspath("."):
+            os.chdir("..")
         return False, f"Git işlemi hatası: {e}"
     except Exception as e:
+        # Ana dizine geri dön
+        if os.getcwd() != os.path.abspath("."):
+            os.chdir("..")
         return False, f"Push hatası: {e}"
 
 def publish_app(folder_path: str, force: bool = False, push_to_github: bool = False) -> Tuple[bool, str]:
@@ -149,7 +185,7 @@ def publish_app(folder_path: str, force: bool = False, push_to_github: bool = Fa
     Args:
         folder_path: Publish edilecek uygulama klasörü
         force: Zorla üzerine yaz
-        push_to_github: GitHub'a push et
+        push_to_github: clapp-packages reposuna push et
         
     Returns:
         (success, message)
@@ -182,12 +218,12 @@ def publish_app(folder_path: str, force: bool = False, push_to_github: bool = Fa
     if not index_success:
         return False, index_message
     
-    # 4. GitHub'a push (opsiyonel)
+    # 4. clapp-packages reposuna push (opsiyonel)
     if push_to_github:
-        push_success, push_message = push_to_github_repo(app_name, app_version)
+        push_success, push_message = push_to_clapp_packages_repo(app_name, app_version)
         if not push_success:
             print(f"⚠️  {push_message}")
-            return True, f"🎉 '{app_name}' yerel olarak publish edildi! GitHub push başarısız."
+            return True, f"🎉 '{app_name}' yerel olarak publish edildi! clapp-packages push başarısız."
     
     return True, f"🎉 '{app_name}' başarıyla publish edildi! Index güncellendi."
 
