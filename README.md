@@ -1,14 +1,14 @@
-# clapp - Komut Satırı Uygulama Paket Yöneticisi
+# clapp - Hafif Komut Satırı Uygulama Paket Yöneticisi
 
-clapp, Python ve Lua uygulamalarını kolayca yönetmenizi sağlayan bir paket yöneticisidir.
+clapp, Python ve Lua uygulamalarını kolayca yükleyip çalıştırmanızı sağlayan, sade ve hızlı bir CLI paket yöneticisidir.
 
 ## Özellikler
 
-- 🚀 **Kolay Kurulum**: Paketleri tek komutla yükleyin
+- 🚀 **Tek Komutla Kurulum ve Çalıştırma**
 - 📦 **Çoklu Dil Desteği**: Python ve Lua uygulamaları
-- 🖥️ **GUI & CLI**: Hem grafik hem komut satırı arayüzü
-- 🔧 **Geliştirici Araçları**: Paket oluşturma ve yayınlama
-- 📋 **Manifest Sistemi**: Kolay paket tanımlama
+- 🔒 **Güvenli ve Şeffaf Paket Sistemi**
+- 🛠️ **Geliştirici Araçları**: Doğrulama, yayınlama, kaldırma, güncelleme
+- 🌐 **Ayrı Paket Deposu**: [clapp-packages](https://github.com/mburakmmm/clapp-packages) ile iki repo sistemi
 
 ## Kurulum
 
@@ -16,43 +16,29 @@ clapp, Python ve Lua uygulamalarını kolayca yönetmenizi sağlayan bir paket y
 pip install clapp
 ```
 
-## Kullanım
-
-### Komut Satırı
+## Temel Kullanım
 
 ```bash
-# Paket yükle
-clapp install https://example.com/package.clapp.zip
+# Paket yükle (uzak depodan)
+clapp install hello-world
 
 # Yüklü paketleri listele
 clapp list
 
 # Paket çalıştır
-clapp run my-app
+clapp run hello-world
 
 # Paket kaldır
-clapp remove my-app
+clapp uninstall hello-world
+
+# Kendi uygulamanı yayınla (clapp-packages'a otomatik push)
+clapp publish ./my-app --push
 ```
 
-### GUI Arayüzü
+## İki Repo Sistemi
 
-```bash
-# GUI'yi başlat
-clapp gui
-```
-
-## Geliştirici Araçları
-
-```bash
-# Yeni paket oluştur
-clapp scaffold my-app --language python
-
-# Paket doğrula
-clapp validate my-app
-
-# Paket yayınla
-clapp publish my-app
-```
+- **clapp:** CLI ve yönetim araçlarını içerir. (Bu repo)
+- **clapp-packages:** Sadece paketler ve index.json içerir. Tüm paket işlemleri publish komutu ile otomatik yapılır.
 
 ## Manifest Formatı
 
@@ -62,29 +48,17 @@ clapp publish my-app
     "version": "1.0.0",
     "language": "python",
     "entry": "main.py",
-    "description": "Uygulama açıklaması",
+    "description": "Açıklama",
     "dependencies": []
 }
 ```
 
-## Paket Deposu
+## Katkı ve Destek
 
-Hazır paketler için: [clapp-packages](https://github.com/mburakmmm/clapp-packages)
+- 🐛 Hata bildirimi ve öneriler için: [Issues](https://github.com/mburakmmm/clapp/issues)
+- 📦 Paket eklemek için: [clapp-packages](https://github.com/mburakmmm/clapp-packages)
+- 📖 Detaylı bilgi ve dokümantasyon: [Wiki](https://github.com/mburakmmm/clapp/wiki)
 
 ## Lisans
 
-MIT License - Detaylar için [LICENSE](LICENSE) dosyasına bakın.
-
-## Katkıda Bulunma
-
-1. Fork edin
-2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
-3. Commit edin (`git commit -m 'Add some amazing feature'`)
-4. Push edin (`git push origin feature/amazing-feature`)
-5. Pull Request açın
-
-## Destek
-
-- 🐛 Bug Report: [Issues](https://github.com/mburakmmm/clapp/issues)
-- 💡 Feature Request: [Issues](https://github.com/mburakmmm/clapp/issues)
-- 📖 Dokumentasyon: [Wiki](https://github.com/mburakmmm/clapp/wiki) 
+MIT License 
