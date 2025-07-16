@@ -39,8 +39,8 @@ def validate_manifest_verbose(manifest):
         elif field == "language":
             if not isinstance(value, str):
                 errors.append(f"'{field}' alanı string olmalı")
-            elif value.lower() not in ["python", "lua"]:
-                errors.append(f"'{field}' alanı 'python' veya 'lua' olmalı, '{value}' geçersiz")
+            elif value.lower() not in ["python", "lua", "dart", "go", "rust", "node", "bash", "perl", "ruby", "php"]:
+                errors.append(f"'{field}' alanı desteklenen bir dil olmalı, '{value}' geçersiz")
         elif field == "entry":
             if not isinstance(value, str) or not value.strip():
                 errors.append(f"'{field}' alanı boş olmayan bir string olmalı")
@@ -61,7 +61,7 @@ def validate_manifest_verbose(manifest):
                     errors.append(f"'dependencies[{i}]' boş olmayan bir string olmalı")
     
     # Bilinmeyen alanları kontrol et
-    known_fields = set(required_fields.keys()) | {"description", "dependencies"}
+    known_fields = set(required_fields.keys()) | {"description", "dependencies", "author", "license", "tags", "category"}
     for field in manifest.keys():
         if field not in known_fields:
             errors.append(f"Bilinmeyen alan: '{field}' (göz ardı edilecek)")

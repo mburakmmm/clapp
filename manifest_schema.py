@@ -42,7 +42,11 @@ def validate_manifest(manifest):
     # Opsiyonel alanlar
     optional_fields = {
         'description': str,
-        'dependencies': list
+        'dependencies': list,
+        'author': str,
+        'license': str,
+        'tags': list,
+        'category': str
     }
     
     # Gerekli alanları kontrol et
@@ -52,9 +56,16 @@ def validate_manifest(manifest):
         if not isinstance(manifest[field], expected_type):
             return False
     
-    # Dil kontrolü
-    if manifest['language'] not in ['python', 'lua']:
-        return False
+    # Dil kontrolü - package_runner'dan desteklenen dilleri al
+    try:
+        from package_runner import get_supported_languages
+        supported_languages = get_supported_languages()
+        if manifest['language'] not in supported_languages:
+            return False
+    except ImportError:
+        # Fallback: Temel diller
+        if manifest['language'] not in ['python', 'lua', 'dart', 'go', 'rust', 'node', 'bash', 'perl', 'ruby', 'php']:
+            return False
     
     # Opsiyonel alanları kontrol et (varsa)
     for field, expected_type in optional_fields.items():
@@ -79,6 +90,10 @@ def get_schema():
         },
         "optional_fields": {
             "description": "string",
-            "dependencies": "list"
+            "dependencies": "list",
+            "author": "string",
+            "license": "string",
+            "tags": "list",
+            "category": "string"
         }
     } 

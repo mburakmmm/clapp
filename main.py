@@ -33,7 +33,7 @@ from where_command import locate_app_path, list_all_app_locations
 from version_command import print_version, print_detailed_version
 
 # Yeni güvenlik ve performans modülleri
-from package_signing import sign_package_file, verify_package_file, check_package_security
+from package_signing import check_package_security
 from version_manager import check_app_updates, get_app_latest_version, increment_app_version
 from cache_manager import get_cache_stats, clear_all_caches, download_packages_parallel
 from smart_search import search_packages, get_search_suggestions, get_search_analytics, clear_search_history
@@ -52,6 +52,9 @@ from dependency_resolver import (
     handle_dependency_tree
 )
 
+# Yeni uygulama oluşturma komutu
+from new_command import handle_new_command
+
 def main():
     """Ana CLI fonksiyonu"""
     
@@ -69,6 +72,7 @@ def main():
   clapp list                    # Yüklü uygulamaları listele
   clapp run hello-python        # hello-python uygulamasını çalıştır
   clapp info hello-python       # Uygulama bilgilerini göster
+  clapp new python my-app       # Yeni Python uygulaması oluştur
 
 🔧 Yönetim Komutları:
   clapp install app.zip         # ZIP dosyasından uygulama yükle
@@ -228,6 +232,13 @@ def main():
     dep_tree_parser = dependency_subparsers.add_parser('tree', help='Bağımlılık ağacı')
     dep_tree_parser.add_argument('app_name', help='Uygulama adı')
     
+    # new komutu (yeni)
+    new_parser = subparsers.add_parser('new', help='Yeni uygulama oluştur')
+    new_parser.add_argument('language', nargs='?', help='Programlama dili')
+    new_parser.add_argument('app_name', nargs='?', help='Uygulama adı')
+    new_parser.add_argument('--list', action='store_true', help='Mevcut şablonları listele')
+    new_parser.add_argument('--target-dir', help='Hedef dizin (opsiyonel)')
+    
     # Argümanları parse et
     args = parser.parse_args()
     
@@ -376,22 +387,17 @@ def main():
                 print("❌ Geçersiz dependency komutu")
                 sys.exit(1)
         
+        elif args.command == 'new':
+            # Yeni uygulama oluşturma komutu
+            success, message = handle_new_command(args)
+            if success:
+                print(message)
+            else:
+                print(f"❌ {message}")
+                sys.exit(1)
+        
         elif args.command == 'security':
-            if args.action == 'sign':
-                success, message = sign_package_file(args.package_path)
-                if success:
-                    print(f"✅ {message}")
-                else:
-                    print(f"❌ {message}")
-                    sys.exit(1)
-            
-            elif args.action == 'verify':
-                signature_path = args.signature or args.package_path.replace('.zip', '.sig')
-                success, message = verify_package_file(args.package_path, signature_path)
-                print(f"{'✅' if success else '❌'} {message}")
-                sys.exit(0 if success else 1)
-            
-            elif args.action == 'check':
+            if args.action == 'check':
                 results = check_package_security(args.package_path)
                 print("🔒 Paket Güvenlik Kontrolü")
                 print("=" * 40)
@@ -402,6 +408,9 @@ def main():
                     print("\n⚠️  Uyarılar:")
                     for warning in results['warnings']:
                         print(f"  - {warning}")
+            else:
+                print("❌ İmzalama özelliği geçici olarak devre dışı")
+                sys.exit(1)
         
         elif args.command == 'update':
             if args.action == 'check':

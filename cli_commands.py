@@ -118,7 +118,11 @@ def list_installed_apps(format_type="table", language_filter=None, search_term=N
         tuple: (success: bool, message: str)
     """
     try:
-        output = list_apps(format_type, language_filter, search_term)
+        output = list_apps(
+            format_type,
+            language_filter or "",
+            search_term or ""
+        )
         print(output)
         return True, "Liste gösterildi"
     except Exception as e:
