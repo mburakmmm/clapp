@@ -32,6 +32,12 @@ from clean_command import run_clean
 from where_command import locate_app_path, list_all_app_locations
 from version_command import print_version, print_detailed_version
 
+# Yeni güvenlik ve performans modülleri
+from package_signing import sign_package_file, verify_package_file, check_package_security
+from version_manager import check_app_updates, get_app_latest_version, increment_app_version
+from cache_manager import get_cache_stats, clear_all_caches, download_packages_parallel
+from smart_search import search_packages, get_search_suggestions, get_search_analytics, clear_search_history
+
 # Yeni publish.cursorrules komutları
 from publish_command import publish_app
 from install_command import install_app
@@ -172,6 +178,34 @@ def main():
     version_parser.add_argument('--short', action='store_true', help='Sadece sürüm numarası')
     version_parser.add_argument('--json', action='store_true', help='JSON formatında')
     version_parser.add_argument('--detailed', action='store_true', help='Detaylı bilgi')
+    
+    # Güvenlik komutları
+    security_parser = subparsers.add_parser('security', help='Paket güvenlik işlemleri')
+    security_parser.add_argument('action', choices=['sign', 'verify', 'check'], help='Güvenlik işlemi')
+    security_parser.add_argument('package_path', help='Paket dosyası yolu')
+    security_parser.add_argument('--signature', help='İmza dosyası yolu (verify için)')
+    
+    # Versiyon yönetimi komutları
+    update_parser = subparsers.add_parser('update', help='Versiyon yönetimi')
+    update_parser.add_argument('action', choices=['check', 'increment'], help='İşlem türü')
+    update_parser.add_argument('--app', help='Uygulama adı')
+    update_parser.add_argument('--type', choices=['major', 'minor', 'patch'], default='patch', help='Artırma tipi')
+    
+    # Cache yönetimi komutları
+    cache_parser = subparsers.add_parser('cache', help='Cache yönetimi')
+    cache_parser.add_argument('action', choices=['stats', 'clear', 'download'], help='Cache işlemi')
+    cache_parser.add_argument('--urls', nargs='+', help='İndirilecek URL\'ler (download için)')
+    cache_parser.add_argument('--dest', help='Hedef dizin (download için)')
+    
+    # Akıllı arama komutları
+    search_parser = subparsers.add_parser('search', help='Akıllı arama')
+    search_parser.add_argument('query', nargs='?', help='Arama sorgusu')
+    search_parser.add_argument('--suggestions', action='store_true', help='Arama önerileri')
+    search_parser.add_argument('--analytics', action='store_true', help='Arama analitikleri')
+    search_parser.add_argument('--clear-history', action='store_true', help='Arama geçmişini temizle')
+    search_parser.add_argument('--language', help='Dil filtresi')
+    search_parser.add_argument('--category', help='Kategori filtresi')
+    search_parser.add_argument('--sort', choices=['relevance', 'name', 'version', 'language'], default='relevance', help='Sıralama')
     
     # dependency komutu (yeni)
     dependency_parser = subparsers.add_parser('dependency', help='Bağımlılık yönetimi')
@@ -340,6 +374,155 @@ def main():
                     sys.exit(1)
             else:
                 print("❌ Geçersiz dependency komutu")
+                sys.exit(1)
+        
+        elif args.command == 'security':
+            if args.action == 'sign':
+                success, message = sign_package_file(args.package_path)
+                if success:
+                    print(f"✅ {message}")
+                else:
+                    print(f"❌ {message}")
+                    sys.exit(1)
+            
+            elif args.action == 'verify':
+                signature_path = args.signature or args.package_path.replace('.zip', '.sig')
+                success, message = verify_package_file(args.package_path, signature_path)
+                print(f"{'✅' if success else '❌'} {message}")
+                sys.exit(0 if success else 1)
+            
+            elif args.action == 'check':
+                results = check_package_security(args.package_path)
+                print("🔒 Paket Güvenlik Kontrolü")
+                print("=" * 40)
+                print(f"Bütünlük: {'✅' if results['integrity'] else '❌'}")
+                print(f"İmza: {'✅' if results['signature'] else '❌'}")
+                print(f"Checksum: {results['checksum']}")
+                if results['warnings']:
+                    print("\n⚠️  Uyarılar:")
+                    for warning in results['warnings']:
+                        print(f"  - {warning}")
+        
+        elif args.command == 'update':
+            if args.action == 'check':
+                if not args.app:
+                    print("❌ --app parametresi gerekli")
+                    sys.exit(1)
+                
+                from package_registry import get_manifest
+                manifest = get_manifest(args.app)
+                if not manifest:
+                    print(f"❌ {args.app} uygulaması bulunamadı")
+                    sys.exit(1)
+                
+                current_version = manifest.get('version', '0.0.0')
+                update_info = check_app_updates(args.app, current_version)
+                
+                print(f"📦 {args.app} Güncelleme Kontrolü")
+                print("=" * 40)
+                print(f"Mevcut: {update_info['current_version']}")
+                print(f"En son: {update_info['latest_version'] or 'Bilinmiyor'}")
+                print(f"Durum: {update_info['message']}")
+                
+                if update_info['has_update']:
+                    print(f"Güncelleme tipi: {update_info['update_type']}")
+            
+            elif args.action == 'increment':
+                if not args.app:
+                    print("❌ --app parametresi gerekli")
+                    sys.exit(1)
+                
+                from package_registry import get_manifest
+                manifest = get_manifest(args.app)
+                if not manifest:
+                    print(f"❌ {args.app} uygulaması bulunamadı")
+                    sys.exit(1)
+                
+                current_version = manifest.get('version', '0.0.0')
+                new_version = increment_app_version(current_version, args.type)
+                print(f"📦 {args.app} versiyonu artırıldı")
+                print(f"Eski: {current_version} → Yeni: {new_version}")
+        
+        elif args.command == 'cache':
+            if args.action == 'stats':
+                stats = get_cache_stats()
+                print("📊 Cache İstatistikleri")
+                print("=" * 30)
+                print(f"Hit: {stats['hits']}")
+                print(f"Miss: {stats['misses']}")
+                print(f"Hit Rate: {stats['hit_rate']}%")
+                print(f"Boyut: {stats['size_mb']} MB")
+            
+            elif args.action == 'clear':
+                deleted_count = clear_all_caches()
+                print(f"✅ {deleted_count} cache dosyası silindi")
+            
+            elif args.action == 'download':
+                if not args.urls or not args.dest:
+                    print("❌ --urls ve --dest parametreleri gerekli")
+                    sys.exit(1)
+                
+                os.makedirs(args.dest, exist_ok=True)
+                results = download_packages_parallel(args.urls, args.dest)
+                
+                print("📥 Paralel İndirme Sonuçları")
+                print("=" * 40)
+                for success, message in results:
+                    print(f"{'✅' if success else '❌'} {message}")
+        
+        elif args.command == 'search':
+            if args.suggestions:
+                from package_registry import list_packages
+                packages = list_packages()
+                suggestions = get_search_suggestions(args.query or "", packages)
+                print("💡 Arama Önerileri")
+                print("=" * 20)
+                for suggestion in suggestions:
+                    print(f"  • {suggestion}")
+            
+            elif args.analytics:
+                analytics = get_search_analytics()
+                print("📈 Arama Analitikleri")
+                print("=" * 25)
+                print(f"Toplam arama: {analytics['total_searches']}")
+                print(f"Benzersiz sorgu: {analytics['unique_queries']}")
+                print(f"Hit rate: {round(analytics['total_searches'] / max(1, analytics['unique_queries']) * 100, 1)}%")
+                
+                if analytics['most_popular']:
+                    print("\n🔥 Popüler Aramalar:")
+                    for query, count in analytics['most_popular']:
+                        print(f"  • {query} ({count} kez)")
+            
+            elif args.clear_history:
+                clear_search_history()
+            
+            elif args.query:
+                from package_registry import list_packages
+                packages = list_packages()
+                
+                filters = {}
+                if args.language:
+                    filters['language'] = args.language
+                if args.category:
+                    filters['category'] = args.category
+                if args.sort:
+                    filters['sort_by'] = args.sort
+                
+                results = search_packages(args.query, packages, filters)
+                
+                print(f"🔍 '{args.query}' için {len(results)} sonuç bulundu")
+                print("=" * 50)
+                
+                for package in results:
+                    score = package.get('search_score', 0)
+                    print(f"📦 {package['name']} v{package['version']} ({package['language']})")
+                    print(f"   {package['description']}")
+                    if score > 0:
+                        print(f"   Skor: {score:.2f}")
+                    print()
+            
+            else:
+                print("❌ Arama sorgusu gerekli veya --suggestions/--analytics kullanın")
                 sys.exit(1)
     
     except KeyboardInterrupt:

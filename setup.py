@@ -72,6 +72,10 @@ setup(
         "where_command",
         "version_command",
         "version",
+        "package_signing",
+        "version_manager",
+        "cache_manager",
+        "smart_search",
     ],
     
     # Paket verileri

@@ -2,7 +2,7 @@
 Version information for clapp-pm package.
 """
 
-__version__ = "1.0.17"
+__version__ = "1.0.18"
 __author__ = "Melih Burak Memiş"
 __email__ = "mburakmemiscy@gmail.com"
 __description__ = "Lightweight cross-language app manager for Python and Lua" 
