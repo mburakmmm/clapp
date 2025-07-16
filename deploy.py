@@ -17,18 +17,33 @@ import subprocess
 import argparse
 from pathlib import Path
 
-def load_pypi_token():
-    """PyPI token'ını dosyadan yükler"""
-    token_file = Path("pypi_token.txt")
-    if token_file.exists():
-        return token_file.read_text().strip()
-    else:
-        print("❌ pypi_token.txt dosyası bulunamadı!")
-        print("Lütfen PyPI token'ınızı pypi_token.txt dosyasına kaydedin.")
-        sys.exit(1)
+def get_pypi_token():
+    """PyPI token'ını kullanıcıdan alır"""
+    print("🔐 PyPI Token Gerekli")
+    print("Token'ı https://pypi.org/manage/account/token/ adresinden alabilirsiniz")
+    print("Token formatı: pypi-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+    print()
+    
+    while True:
+        token = input("PyPI Token'ınızı girin: ").strip()
+        
+        if not token:
+            print("❌ Token boş olamaz!")
+            continue
+            
+        if not token.startswith("pypi-"):
+            print("❌ Token 'pypi-' ile başlamalı!")
+            continue
+            
+        if len(token) < 50:
+            print("❌ Token çok kısa görünüyor!")
+            continue
+            
+        print("✅ Token formatı doğru")
+        return token
 
-# PyPI Token'ı yükle
-PYPI_TOKEN = load_pypi_token()
+# PyPI Token'ı kullanıcıdan al
+PYPI_TOKEN = get_pypi_token()
 
 def run_command(command, description, check=True):
     """Komut çalıştırır ve sonucu döndürür"""

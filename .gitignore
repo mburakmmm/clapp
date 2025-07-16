@@ -189,7 +189,6 @@ config.json
 clapp-packages-repo/
 
 # Secrets and tokens
-pypi_token.txt
 .env
 secrets/
 
