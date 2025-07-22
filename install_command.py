@@ -40,13 +40,7 @@ def load_index(index_path: str = "index.json") -> Tuple[bool, str, Optional[list
         (success, message, apps_list)
     """
     try:
-        # Yerel index.json'u kontrol et
-        if os.path.exists(index_path):
-            with open(index_path, 'r', encoding='utf-8') as f:
-                apps = json.load(f)
-            return True, "Yerel index yüklendi", apps
-        
-        # GitHub'dan index.json'u indir
+        # Her zaman GitHub'dan güncel index.json'u indir
         print("🔄 GitHub'dan index.json indiriliyor...")
         url = "https://raw.githubusercontent.com/mburakmmm/clapp-packages/main/index.json"
         response = requests.get(url, timeout=10)
@@ -58,10 +52,22 @@ def load_index(index_path: str = "index.json") -> Tuple[bool, str, Optional[list
                 json.dump(apps, f, indent=2, ensure_ascii=False)
             return True, "GitHub'dan index indirildi", apps
         else:
-            return False, f"GitHub'dan index indirilemedi: {response.status_code}", None
+            # GitHub'dan indirilemezse yerel dosyayı dene
+            if os.path.exists(index_path):
+                with open(index_path, 'r', encoding='utf-8') as f:
+                    apps = json.load(f)
+                return True, "Yerel index yüklendi (GitHub erişilemez)", apps
+            else:
+                return False, f"GitHub'dan index indirilemedi: {response.status_code}", None
             
     except requests.RequestException as e:
-        return False, f"Network hatası: {e}", None
+        # Network hatası durumunda yerel dosyayı dene
+        if os.path.exists(index_path):
+            with open(index_path, 'r', encoding='utf-8') as f:
+                apps = json.load(f)
+            return True, "Yerel index yüklendi (network hatası)", apps
+        else:
+            return False, f"Network hatası: {e}", None
     except json.JSONDecodeError as e:
         return False, f"JSON parse hatası: {e}", None
     except Exception as e:
