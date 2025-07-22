@@ -1,0 +1,560 @@
+# .cursorrules for clapp_core (YAML format)
+
+module: clapp_core
+
+description: |
+  This module defines the core command-line interface for the `clapp` package manager.
+  It handles user commands like `run` and `list`, delegates actions to submodules,
+  and serves as the entry point for the CLI system.
+
+development_goals:
+  - Provide a clean CLI interface for running and listing installed apps.
+  - Interface with the `package_registry` and `package_runner` modules.
+  - Use argparse for CLI argument parsing.
+
+imports:
+  - os
+  - json
+  - argparse
+  - package_registry
+  - package_runner
+
+functions:
+  - name: main
+    description: Entry point for clapp CLI, handles argument parsing and delegates commands.
+    logic:
+      - Parse command-line arguments: `run <app_name>` and `list`
+      - If command is `list`, call `package_registry.list_packages()`
+      - If command is `run`, call `package_runner.run_app(app_name)`
+      - If invalid/missing command, print help or error message
+
+command_line:
+  usage: clapp [command] [app_name]
+  supported_commands:
+    - run
+    - list
+
+entry_point:
+  - if __name__ == '__main__': call main()
+
+development_suggestions:
+  - Keep this module minimal, delegate logic to helper modules.
+  - Support future commands like `install`, `remove`, `validate`, but do not implement yet.
+  - Add colored CLI output in future for better UX.
+
+# .cursorrules for package_runner (YAML format)
+
+module: package_runner
+
+description: |
+  This module runs an installed clapp application by reading its manifest file,
+  determining the language (Python or Lua), and executing the specified entry file.
+
+development_goals:
+  - Support running Python and Lua applications
+  - Validate presence of manifest and entry file before execution
+  - Handle errors gracefully (e.g. missing manifest, unsupported language)
+
+imports:
+  - os
+  - json
+
+functions:
+  - name: run_app
+    params:
+      - app_name: string
+    description: Executes the entry point of the specified application based on its declared language.
+    logic:
+      - Build path to `apps/{app_name}/manifest.json`
+      - If manifest exists:
+          - Load manifest
+          - Get `language` and `entry` fields
+          - Match language:
+              - If Python → run `python apps/app_name/entry`
+              - If Lua → run `lua apps/app_name/entry`
+              - Else → print "Unsupported language"
+      - If manifest missing → print error message
+
+supported_languages:
+  - python
+  - lua
+
+usage:
+  called_by:
+    - clapp_core.main()
+
+future_extensions:
+  - Add support for Dart or other languages
+  - Add dry-run or debug mode for verifying command without executing
+
+# .cursorrules for manifest_schema (YAML format)
+
+module: manifest_schema
+
+description: |
+  This module defines and validates the required structure of a clapp package manifest.
+  It ensures that manifest.json files contain the correct keys with expected types.
+
+development_goals:
+  - Define a base schema for manifest.json validation
+  - Provide a validation function that checks for required fields and types
+  - Integrate basic error reporting for invalid manifests
+
+imports:
+  - json
+  - os
+
+functions:
+  - name: validate_manifest
+    params:
+      - manifest: dict
+    returns: bool
+    description: Validates that the manifest contains all required fields with correct types.
+    logic:
+      - Required fields:
+          - name: string
+          - version: string
+          - language: string (python or lua)
+          - entry: string
+      - Optional fields:
+          - description: string
+          - dependencies: list (optional)
+      - For each required field, check existence and type
+      - Return True if valid, False if any field is missing or invalid
+
+schema:
+  required_fields:
+    - name: string
+    - version: string
+    - language: string
+    - entry: string
+  optional_fields:
+    - description: string
+    - dependencies: list
+
+usage:
+  called_by:
+    - package_registry.get_manifest()
+    - future installer/publisher modules
+
+future_extensions:
+  - Add schema versioning
+  - Add JSON Schema-based validation
+  - Provide warnings for unused or unknown fields
+
+# .cursorrules for gui_main (YAML format)
+
+module: gui_main
+
+description: |
+  This module initializes the main Flet-based GUI for the clapp package manager.
+  It sets up the window, navigation layout, and loads the App Store view.
+
+development_goals:
+  - Launch a Flet window with a modern and minimal design
+  - Render the package list using `gui_appstore`
+  - Prepare the layout for future tabs or views (e.g., settings, info)
+
+imports:
+  - flet as ft
+  - gui_appstore
+
+functions:
+  - name: main
+    params:
+      - page: ft.Page
+    description: Entry point for the Flet UI. Sets theme, title, layout and mounts the app store UI.
+    logic:
+      - Set window title and theme mode
+      - Call `gui_appstore.render_appstore(page)` to display the package list
+      - Optionally define navigation or tab placeholders for future expansion
+
+layout:
+  window:
+    title: "clapp App Store"
+    theme: Dark or system
+    layout: Single column (centered)
+
+entry_point:
+  - ft.app(target=main)
+
+usage:
+  run_command: python gui_main.py
+  called_by: User directly from terminal or launcher
+
+future_extensions:
+  - Add top navigation bar (e.g., tabs for Store, Info, About)
+  - Add language/theme switcher in the UI
+  - Add footer with version info and copyright
+
+# .cursorrules for gui_appstore (YAML format)
+
+module: gui_appstore
+
+description: |
+  This module renders the App Store view in the clapp GUI.
+  It fetches the list of installed packages from `package_registry` and displays
+  them as visual cards using Flet UI components.
+  Only viewing is supported — install/remove actions are not allowed.
+
+development_goals:
+  - Retrieve installed app data from `package_registry`
+  - Display each app in a visual card with name, language, and description
+  - Ensure a clean and scrollable layout suitable for desktop and mobile
+
+imports:
+  - flet as ft
+  - package_registry
+
+functions:
+  - name: render_appstore
+    params:
+      - page: ft.Page
+    description: Builds and renders the app store UI using Flet components.
+    logic:
+      - Fetch list of apps using `package_registry.list_packages()`
+      - For each app, create a Card widget:
+          - App name (title)
+          - Language (icon or label)
+          - Description (optional)
+      - Display all cards inside a scrollable Column or ListView
+
+layout:
+  - Scrollable list of app cards
+  - Consistent padding and spacing
+  - Dark mode support
+
+ui_elements:
+  - Card (per app)
+  - Text (name, language, description)
+  - Icons (optional: Python/Lua logos)
+
+restrictions:
+  - No install/remove/update buttons
+  - Read-only presentation
+
+usage:
+  called_by: gui_main.main()
+
+future_extensions:
+  - Add search bar or filters (by language, category)
+  - Support external icons or screenshots
+  - Expand to show dependency lists per app
+
+# .cursorrules for gui_utils (YAML format)
+
+module: gui_utils
+
+description: |
+  This module provides reusable UI helper functions and constants for the clapp GUI.
+  It includes utilities for building app cards, setting consistent theming,
+  and optionally mapping language types to icons or colors.
+
+development_goals:
+  - Simplify UI construction by modularizing card creation and style logic
+  - Provide utility functions for consistent component styling
+  - Centralize icon or color mapping for app languages (Python, Lua)
+
+imports:
+  - flet as ft
+
+functions:
+  - name: create_app_card
+    params:
+      - name: string
+      - language: string
+      - description: string (optional)
+    returns: ft.Card
+    description: Builds a styled card widget representing an app with its info.
+    logic:
+      - Use `ft.Card` with padding and margin
+      - Include Text widgets for name, language, and description
+      - Optionally include a colored strip or icon based on language
+
+  - name: get_language_icon
+    params:
+      - language: string
+    returns: ft.Icon or str
+    description: Returns a Flet-compatible icon or string label for a given language (e.g., Python or Lua)
+
+  - name: get_color_for_language
+    params:
+      - language: string
+    returns: string (color hex)
+    description: Returns a consistent color for UI elements based on language
+
+ui_standards:
+  font_size: normal: 14, title: 18
+  spacing: default: 10
+  card_border_radius: 12
+  theme_mode: dark (default)
+
+usage:
+  used_by:
+    - gui_appstore.render_appstore()
+
+future_extensions:
+  - Add animation or hover effects
+  - Support badge icons (e.g., "new", "beta")
+  - Localize language labels
+
+# .cursorrules for installer (YAML format)
+
+module: installer
+
+description: |
+  This module allows installation of `.clapp` packages from zip files or URLs.
+  It extracts the archive into the `apps/` directory and ensures a valid manifest exists.
+
+development_goals:
+  - Support local `.zip` file or remote URL-based installation
+  - Unzip into a folder inside `apps/` based on manifest `name`
+  - Validate manifest structure using `manifest_schema`
+  - Prevent overwriting existing apps unless forced
+
+imports:
+  - os
+  - zipfile
+  - urllib.request
+  - tempfile
+  - shutil
+  - manifest_schema
+  - package_registry
+
+functions:
+  - name: install_package
+    params:
+      - source: str (local zip path or remote URL)
+      - force: bool (optional, default False)
+    description: Installs a clapp app from a .zip file or URL into the `apps/` folder.
+    logic:
+      - Download to temp if URL
+      - Extract zip
+      - Load manifest and validate
+      - Create `apps/{name}` directory
+      - Copy contents into it unless it already exists (or force=True)
+      - Confirm success or show error
+
+usage:
+  used_by:
+    - future CLI: `clapp install <source>`
+    - future GUI: App Store install button (currently disabled)
+
+future_extensions:
+  - Support install from `.clapp` Git repositories
+  - Add progress bar or status indicator
+  - Add hash/signature verification for packages
+
+# .cursorrules for dependency_resolver (YAML format)
+
+module: dependency_resolver
+
+description: |
+  This module checks and resolves declared dependencies from a package's manifest file.
+  It alerts the user if required dependencies are not found among installed clapp apps.
+
+development_goals:
+  - Read the `dependencies` field from a manifest
+  - Check if each dependency is installed (exists in `apps/` and has a valid manifest)
+  - Report missing dependencies via CLI or GUI
+
+imports:
+  - os
+  - package_registry
+
+functions:
+  - name: check_dependencies
+    params:
+      - manifest: dict
+    returns: list of missing dependency names
+    description: Given a manifest, checks which declared dependencies are not currently installed.
+    logic:
+      - Extract `dependencies` from manifest (if any)
+      - For each dependency name:
+          - Use `package_registry.get_manifest(name)` to check existence
+          - If missing, add to result list
+      - Return list of missing dependencies (or empty list)
+
+usage:
+  used_by:
+    - installer.install_package (after manifest validation)
+    - cli or GUI for warnings
+
+future_extensions:
+  - Add version constraints and semantic version comparison
+  - Support optional dependencies
+  - Allow automatic installation suggestions for missing dependencies
+
+# .cursorrules for gui_filter (YAML format)
+
+module: gui_filter
+
+description: |
+  This module adds filtering functionality to the clapp App Store GUI.
+  It allows users to filter the list of installed apps by name, language, or description.
+
+development_goals:
+  - Integrate a search bar into the App Store interface
+  - Allow filtering by typing text (matches name or description)
+  - Optionally filter by language using a dropdown or buttons
+  - Update displayed app list dynamically
+
+imports:
+  - flet as ft
+  - package_registry
+  - gui_utils
+
+functions:
+  - name: render_filtered_appstore
+    params:
+      - page: ft.Page
+    description: Combines a search input and filtered app list in a unified layout.
+    logic:
+      - Display a search bar (ft.TextField)
+      - Optionally add language filter (e.g., Dropdown with "All", "Python", "Lua")
+      - On input change, filter apps and update visible cards using `gui_utils.create_app_card`
+
+ui_elements:
+  - TextField: search bar
+  - Dropdown or segmented control: language filter (optional)
+  - Column or ListView: dynamically updated app cards
+
+usage:
+  used_by:
+    - gui_main (as replacement or enhancement of gui_appstore)
+
+future_extensions:
+  - Add tag or category-based filters
+  - Add multi-language or multi-term search support
+  - Add real-time debounce for large app lists
+
+# .cursorrules for manifest_validator (YAML format)
+
+module: manifest_validator
+
+description: |
+  This module validates a manifest file against expected structure defined in `manifest_schema`
+  and provides detailed, user-friendly error messages for missing or incorrect fields.
+
+development_goals:
+  - Check for required fields and their types
+  - Return clear, structured error messages instead of just True/False
+  - Assist developers during publish or install by showing what’s wrong
+
+imports:
+  - manifest_schema
+
+functions:
+  - name: validate_manifest_verbose
+    params:
+      - manifest: dict
+    returns: tuple (is_valid: bool, errors: list of strings)
+    description: Performs schema validation and returns a list of detailed error messages if any.
+    logic:
+      - Retrieve schema from `manifest_schema`
+      - For each required field:
+          - Check existence and type
+          - If invalid, append descriptive message to errors
+      - If errors is empty, return (True, [])
+      - Else return (False, errors)
+
+usage:
+  used_by:
+    - installer.install_package
+    - publisher.build_package
+
+future_extensions:
+  - Support optional warnings for unused or deprecated fields
+  - Add manifest line/column info if JSON parsing fails
+  - Integrate with JSON schema validator if needed
+
+# .cursorrules for version_checker (YAML format)
+
+module: version_checker
+
+description: |
+  This module checks whether an installed clapp package is up-to-date by comparing its version
+  in the local manifest with a remote version registry (JSON-based).
+
+development_goals:
+  - Fetch remote version info from a static or dynamic JSON source (e.g. Supabase, GitHub, local server)
+  - Compare semantic versions (e.g. 1.2.0 < 1.3.1)
+  - Return whether the installed version is outdated, current, or unknown
+
+imports:
+  - json
+  - urllib.request
+  - package_registry
+
+functions:
+  - name: check_version
+    params:
+      - app_name: string
+      - remote_url: string (JSON registry endpoint)
+    returns: dict (status: "up-to-date" | "outdated" | "unknown", current: str, latest: str)
+    description: Compares the local app version with the remote version.
+    logic:
+      - Get local version using `package_registry.get_manifest(app_name)`
+      - Download remote JSON registry (example format: {"app_name": "1.2.3"})
+      - If remote version exists for the app:
+          - Compare it with local version (semantic versioning)
+          - Return result status
+      - Else return "unknown"
+
+usage:
+  used_by:
+    - CLI: `clapp check` (future)
+    - GUI: update badge (future)
+
+future_extensions:
+  - Integrate Supabase or GitHub as remote version provider
+  - Highlight updates in GUI visually
+  - Add batch check for all apps
+
+# .cursorrules for publisher (YAML format)
+
+module: publisher
+
+description: |
+  This module prepares a clapp application for publishing by validating its manifest,
+  and packaging the app folder into a `.clapp.zip` file. Optionally, it can upload the file to a remote URL.
+
+development_goals:
+  - Validate the app folder and manifest using `manifest_validator`
+  - Create a `.zip` archive named `{app_name}.clapp.zip`
+  - Ensure no extra files or folders are included (whitelist: manifest, entry, assets)
+  - Optionally upload or print instructions for publishing manually
+
+imports:
+  - os
+  - json
+  - zipfile
+  - manifest_validator
+
+functions:
+  - name: build_package
+    params:
+      - app_folder: string
+    returns: string (path to zip file)
+    description: Validates and builds a zip file containing the app contents.
+    logic:
+      - Load manifest from `app_folder/manifest.json`
+      - Validate with `manifest_validator.validate_manifest_verbose`
+      - If valid, zip folder into `{app_name}.clapp.zip`
+      - Return zip path
+
+  - name: upload_package (optional)
+    params:
+      - zip_path: string
+      - upload_url: string
+    description: Placeholder for future implementation of remote upload (e.g., HTTP PUT or Supabase)
+
+usage:
+  used_by:
+    - CLI: `clapp publish <app_folder>` (future)
+
+future_extensions:
+  - Add `.clappignore` file to exclude files from archive
+  - Add checksum generation or signature
+  - Automate Supabase or GitHub upload
+

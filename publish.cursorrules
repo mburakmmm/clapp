@@ -1,0 +1,251 @@
+# .cursorrules for build_index_script (YAML format)
+
+module: build_index_script
+
+description: |
+  This module defines the behavior of the `build_index.py` script, which regenerates the main index.json
+  file by scanning all published apps in the repository. It is automatically triggered on publish via CLI or GUI.
+
+script_file: build_index.py
+triggered_by:
+  - clapp publish <folder>
+  - GUI publish action in Developer Tools (future)
+
+index_file: index.json
+app_root_directory: ./packages
+
+logic:
+  - For each subfolder in ./packages:
+      - Load manifest.json
+      - Extract fields: name, version, language, description, dependencies, entry_file
+      - Append as an object to a master list
+  - Write list as JSON to ./index.json (overwrite)
+
+fields_required:
+  - name
+  - version
+  - language
+  - description
+  - dependencies
+  - entry_file
+
+functions:
+  - name: generate_index
+    description: Scans all app folders and generates new index.json
+    logic:
+      - Walk through ./packages directory
+      - Load manifest.json from each
+      - Build a Python list of app dicts
+      - Dump to ./index.json using `json.dump`
+
+output:
+  - Success: "index.json updated with N apps."
+  - Error: Logs missing manifest or malformed entries
+
+future_extensions:
+  - Add checksum/version hash to each entry
+  - Support YAML output option
+  - Sort by app name or last update
+
+# .cursorrules for publish_command (YAML format)
+
+module: publish_command
+
+description: |
+  This module defines the behavior of the `clapp publish <folder>` command.
+  It packages and publishes a valid clapp application into the repository and triggers index regeneration.
+
+usage:
+  - clapp publish <folder>
+
+steps:
+  - Validate manifest.json in folder (reuse validate module)
+  - Copy folder contents to ./packages/<app_name> (overwrite if exists)
+  - Trigger build_index.py to regenerate index.json
+
+required_files:
+  - manifest.json
+  - entry_file (defined inside manifest)
+
+destination:
+  - ./packages/<app_name>/
+
+index_update:
+  method: script_call
+  script: build_index.py
+  after_successful_publish: true
+
+output:
+  - Success: "App '<name>' published successfully. Index updated."
+  - Validation error: "Manifest is missing required fields."
+  - Index error: "Failed to update index."
+
+future_extensions:
+  - Support dry-run mode
+  - Add `--force` flag to overwrite even on version mismatch
+  - Add GitHub auto-commit option (with CLI auth token)
+
+affected_modules:
+  - build_index_script
+  - validate_command
+
+# .cursorrules for github_actions_index_updater (YAML format)
+
+module: github_actions_index_updater
+
+description: |
+  This module defines a GitHub Actions workflow that automatically runs build_index.py
+  and commits the updated index.json to the repository whenever a new app is published.
+
+workflow_file: .github/workflows/update-index.yml
+trigger:
+  on:
+    push:
+      paths:
+        - 'packages/**'
+        - 'build_index.py'
+
+jobs:
+  update-index:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies (if needed)
+        run: |
+          pip install -r requirements.txt || true
+
+      - name: Run index builder script
+        run: |
+          python build_index.py
+
+      - name: Commit and push updated index.json
+        run: |
+          git config user.name "clapp-bot"
+          git config user.email "clapp-bot@users.noreply.github.com"
+          git add index.json
+          git commit -m "🔄 Auto-update index.json from GitHub Actions" || echo "No changes"
+          git push
+
+notes:
+  - Ensure the repository has push access (e.g. with a PAT if private)
+  - Optional: protect main branch or run on pull request instead
+
+future_extensions:
+  - Add status badge for index update
+  - Run linter or validator before commit
+
+# .cursorrules for install_command (YAML format)
+
+module: install_command
+
+description: |
+  This module defines the behavior of the `clapp install <app_name>` command.
+  It fetches and installs a package by name using metadata from index.json.
+
+usage:
+  - clapp install <app_name>
+
+steps:
+  - Load local index.json (fetched from GitHub or bundled)
+  - Search for app_name in index
+  - If found:
+      - Extract repo_url and subdir path
+      - Clone or download only that subdir using sparse-checkout or zip URL
+      - Copy files to local packages/<app_name>
+      - Validate manifest.json
+  - If not found: show error "App not found in index"
+
+index_format:
+  fields_required:
+    - name
+    - repo_url
+    - subdir
+    - language
+    - description
+    - dependencies
+
+installation_dir: ~/.clapp/apps/<app_name>
+
+output:
+  - Success: "App '<name>' installed successfully."
+  - Error: "App not found." or "Manifest invalid."
+
+future_extensions:
+  - Allow install from URL fallback (optional)
+  - Support install from local zip/tar file
+  - Version pinning (e.g. clapp install app@1.2.0)
+
+# .cursorrules for uninstall_command (YAML format)
+
+module: uninstall_command
+
+description: |
+  This module defines the behavior of the `clapp uninstall <app_name>` command.
+  It removes an installed application from the local system.
+
+usage:
+  - clapp uninstall <app_name>
+
+steps:
+  - Check if ~/.clapp/apps/<app_name> exists
+  - Prompt user to confirm removal (optional, or use --yes flag)
+  - Delete the folder and all its contents
+  - Optionally remove any temporary/cache files related to the app
+
+output:
+  - Success: "App '<name>' removed successfully."
+  - Error: "App '<name>' is not installed."
+
+flags:
+  - --yes: Skip confirmation
+
+safety:
+  - Ensure deletion is scoped only to ~/.clapp/apps/<app_name>
+  - Prevent deleting system or unrelated directories
+
+future_extensions:
+  - Add uninstall hooks (e.g. remove configs or logs)
+  - Support moving to trash instead of permanent delete
+  - Option to retain user data (if any)
+
+# .cursorrules for list_command (YAML format)
+
+module: list_command
+
+description: |
+  This module defines the behavior of the `clapp list` command.
+  It displays a list of all locally installed clapp applications.
+
+usage:
+  - clapp list
+
+steps:
+  - Read ~/.clapp/apps/ directory
+  - For each folder:
+      - Load manifest.json
+      - Extract: name, version, language, description
+  - Display as a table or clean line list
+
+output:
+  - Format example:
+      - notepad   v1.0.0   python   Simple note-taking app
+      - calcpro   v2.1.0   lua      Scientific calculator
+
+flags:
+  - --json: Return output as raw JSON list
+  - --table: Force table layout (default if terminal supported)
+
+errors:
+  - If no apps: "No apps are currently installed."
+
+future_extensions:
+  - Add sorting (by name, version, language)
+  - Add tag/category column if supported by manifest
+  - Add `clapp list --outdated` (compare with remote index)
