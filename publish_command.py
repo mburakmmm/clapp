@@ -284,16 +284,18 @@ def push_to_clapp_packages_repo(app_name: str, app_version: str) -> Tuple[bool, 
         result = subprocess.run(['git', 'status', '--porcelain'], 
                               capture_output=True, text=True)
         
-        # Değişiklik olsun olmasın, her durumda push yap
-        print("📦 Değişiklikler push ediliyor...")
-        
-        # Değişiklikleri ekle
-        subprocess.run(['git', 'add', '.'], check=True)
-        
-        # Commit oluştur
-        commit_message = f"📦 Publish {app_name} v{app_version}\n\n- {app_name} uygulaması packages/ klasörüne eklendi\n- index.json güncellendi\n- Otomatik publish işlemi"
-        
-        subprocess.run(['git', 'commit', '-m', commit_message], check=True)
+        # Working tree'de değişiklik var mı kontrol et
+        if result.stdout.strip():
+            # Değişiklik var, add ve commit yap
+            print("📦 Değişiklikler commit ediliyor...")
+            subprocess.run(['git', 'add', '.'], check=True)
+            
+            # Commit oluştur
+            commit_message = f"📦 Publish {app_name} v{app_version}\n\n- {app_name} uygulaması packages/ klasörüne eklendi\n- index.json güncellendi\n- Otomatik publish işlemi"
+            subprocess.run(['git', 'commit', '-m', commit_message], check=True)
+        else:
+            # Working tree temiz, sadece push yapılıyor...
+            print("📦 Working tree temiz, sadece push yapılıyor...")
         
         # Push et
         try:
