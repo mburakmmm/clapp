@@ -49,15 +49,12 @@ def run_command(command, description, check=True):
     """Komut çalıştırır ve sonucu döndürür"""
     print(f"🔄 {description}...")
     try:
-        # shell=True yerine doğrudan komut listesi kullan
-        if isinstance(command, str):
-            # Basit komutlar için split kullan
-            if command.startswith('git '):
-                cmd_parts = command.split()
-            else:
-                cmd_parts = ['sh', '-c', command]
-        else:
+        # Komut listesi olarak geçirilmişse doğrudan kullan
+        if isinstance(command, list):
             cmd_parts = command
+        else:
+            # String komutları split et
+            cmd_parts = command.split()
             
         result = subprocess.run(
             cmd_parts, 
@@ -154,7 +151,7 @@ def deploy(version_type="patch", message=None, skip_version=False):
     if not message:
         message = f"Auto-deploy v{new_version}"
     
-    success, _ = run_command(f'git commit -m "{message}"', "Git commit yapılıyor")
+    success, _ = run_command(['git', 'commit', '-m', message], "Git commit yapılıyor")
     if not success:
         return False
     
@@ -164,7 +161,7 @@ def deploy(version_type="patch", message=None, skip_version=False):
         return False
     
     # 6. PyPI upload
-    upload_command = f'python -m twine upload --username __token__ --password {PYPI_TOKEN} dist/clapp_pm-{new_version}*'
+    upload_command = ['python', '-m', 'twine', 'upload', '--username', '__token__', '--password', PYPI_TOKEN, f'dist/clapp_pm-{new_version}*']
     success, _ = run_command(upload_command, "PyPI'ya upload ediliyor")
     if not success:
         return False
