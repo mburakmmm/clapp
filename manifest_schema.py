@@ -64,7 +64,7 @@ def validate_manifest(manifest):
             return False
     except ImportError:
         # Fallback: Temel diller
-        if manifest['language'] not in ['python', 'lua', 'dart', 'go', 'rust', 'node', 'bash', 'perl', 'ruby', 'php']:
+        if manifest['language'] not in ['python', 'lua', 'love2d', 'dart', 'go', 'rust', 'node', 'bash', 'perl', 'ruby', 'php']:
             return False
     
     # Opsiyonel alanları kontrol et (varsa)

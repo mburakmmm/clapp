@@ -39,7 +39,7 @@ def validate_manifest_verbose(manifest):
         elif field == "language":
             if not isinstance(value, str):
                 errors.append(f"'{field}' alanı string olmalı")
-            elif value.lower() not in ["python", "lua", "dart", "go", "rust", "node", "bash", "perl", "ruby", "php"]:
+            elif value.lower() not in ["python", "lua", "love2d", "dart", "go", "rust", "node", "bash", "perl", "ruby", "php"]:
                 errors.append(f"'{field}' alanı desteklenen bir dil olmalı, '{value}' geçersiz")
         elif field == "entry":
             if not isinstance(value, str) or not value.strip():
