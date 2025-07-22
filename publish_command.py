@@ -57,13 +57,18 @@ def validate_app_folder(folder_path: str) -> Tuple[bool, str, Optional[dict]]:
 
 def copy_app_to_packages(source_folder: str, app_name: str) -> Tuple[bool, str]:
     """
-    Uygulama klasörünü packages/ altına kopyalar
+    Uygulama klasörünü ana clapp dizinindeki packages/ altına kopyalar
     
     Returns:
         (success, message)
     """
     try:
-        packages_dir = "./packages"
+        # Ana clapp dizinini bul
+        clapp_root, _ = find_clapp_root_with_build_index()
+        if not clapp_root:
+            return False, "Ana clapp dizini bulunamadı"
+        
+        packages_dir = os.path.join(clapp_root, "packages")
         target_path = os.path.join(packages_dir, app_name)
         
         # packages klasörünü oluştur
@@ -227,11 +232,11 @@ def update_index() -> Tuple[bool, str]:
         # build_index.py'yi ana dizinde çalıştır
         result = subprocess.run([
             sys.executable, build_index_path
-        ], capture_output=True, text=True, cwd=clapp_root)
+        ], cwd=clapp_root)
         if result.returncode == 0:
             return True, "Index başarıyla güncellendi"
         else:
-            return False, f"Index güncelleme hatası: {result.stderr}\nÇalıştırılan dizin: {clapp_root}"
+            return False, f"Index güncelleme hatası: Çalıştırılan dizin: {clapp_root}"
     except Exception as e:
         return False, f"Index script çalıştırılamadı: {e}"
 
@@ -256,8 +261,12 @@ def push_to_clapp_packages_repo(app_name: str, app_version: str) -> Tuple[bool, 
                 packages_repo_path
             ], check=True, cwd=".")
         
-        # Sadece yeni uygulamayı clapp-packages reposuna kopyala
-        source_app = os.path.join("./packages", app_name)
+        # Ana clapp dizinindeki packages klasöründen uygulamayı kopyala
+        clapp_root, _ = find_clapp_root_with_build_index()
+        if not clapp_root:
+            return False, "Ana clapp dizini bulunamadı"
+        
+        source_app = os.path.join(clapp_root, "packages", app_name)
         target_app = os.path.join(packages_repo_path, "packages", app_name)
         
         # Hedef packages klasörünü oluştur (yoksa)
@@ -268,7 +277,7 @@ def push_to_clapp_packages_repo(app_name: str, app_version: str) -> Tuple[bool, 
         if os.path.exists(target_app):
             shutil.rmtree(target_app)
         
-        # Sadece yeni uygulamayı kopyala
+        # Uygulamayı kopyala
         shutil.copytree(source_app, target_app)
         print(f"✅ {app_name} uygulaması clapp-packages reposuna kopyalandı")
         
@@ -358,26 +367,23 @@ def publish_app(folder_path: str, force: bool = False, push_to_github: bool = Fa
     app_version = manifest['version']
     print(f"✅ {app_name} v{app_version} doğrulandı")
     
-    # 2. Packages klasörüne kopyala
+    # 2. Uygulamayı packages klasörüne kopyala
     print("2️⃣ Uygulama kopyalanıyor...")
-    copy_success, copy_message = copy_app_to_packages(folder_path, app_name)
+    success, message = copy_app_to_packages(folder_path, app_name)
+    if not success:
+        return False, message
     
-    if not copy_success:
-        return False, copy_message
-    
-    # 3. Index'i güncelle
+    # 3. Index güncelle
     print("3️⃣ Index güncelleniyor...")
-    index_success, index_message = update_index()
+    success, message = update_index()
+    if not success:
+        return False, message
     
-    if not index_success:
-        return False, index_message
-    
-    # 4. clapp-packages reposuna push (opsiyonel)
+    # 4. Eğer push isteniyorsa, clapp-packages reposuna push et
     if push_to_github:
-        push_success, push_message = push_to_clapp_packages_repo(app_name, app_version)
-        if not push_success:
-            print(f"⚠️  {push_message}")
-            return True, f"🎉 '{app_name}' yerel olarak publish edildi! clapp-packages push başarısız."
+        success, message = push_to_clapp_packages_repo(app_name, app_version)
+        if not success:
+            return False, message
     
     return True, f"🎉 '{app_name}' başarıyla publish edildi! Index güncellendi."
 
