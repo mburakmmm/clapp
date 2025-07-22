@@ -148,74 +148,56 @@ def find_clapp_root_with_build_index():
     import os
     import subprocess
     
-    # Debug bilgisi
-    print(f"🔍 Mevcut çalışma dizini: {os.getcwd()}")
-    print(f"🔍 publish_command.py konumu: {os.path.dirname(os.path.abspath(__file__))}")
-    
     # 1. which clapp konumundan arama
     try:
         result = subprocess.run(['which', 'clapp'], capture_output=True, text=True)
         if result.returncode == 0:
             clapp_path = result.stdout.strip()
-            print(f"🔍 1. which clapp sonucu: {clapp_path}")
             
             # clapp komutunun bulunduğu dizinden başlayarak yukarı çık
             clapp_dir = os.path.dirname(clapp_path)
             search_dir = clapp_dir
             
-            print(f"🔍 1. Arama: {clapp_dir} dizininden başlıyor...")
             while search_dir != os.path.dirname(search_dir):  # Root'a ulaşana kadar
                 build_index_path = os.path.join(search_dir, "build_index.py")
-                print(f"   Kontrol ediliyor: {build_index_path}")
                 if os.path.exists(build_index_path):
-                    print(f"✅ build_index.py which clapp yanında bulundu: {build_index_path}")
                     return search_dir, build_index_path
                 search_dir = os.path.dirname(search_dir)
-    except Exception as e:
-        print(f"⚠️  which clapp hatası: {e}")
+    except Exception:
+        pass
     
     # 2. pyenv which clapp konumundan arama
     try:
         result = subprocess.run(['pyenv', 'which', 'clapp'], capture_output=True, text=True)
         if result.returncode == 0:
             clapp_path = result.stdout.strip()
-            print(f"🔍 2. pyenv which clapp sonucu: {clapp_path}")
             
             # clapp komutunun bulunduğu dizinden başlayarak yukarı çık
             clapp_dir = os.path.dirname(clapp_path)
             search_dir = clapp_dir
             
-            print(f"🔍 2. Arama: {clapp_dir} dizininden başlıyor...")
             while search_dir != os.path.dirname(search_dir):  # Root'a ulaşana kadar
                 build_index_path = os.path.join(search_dir, "build_index.py")
-                print(f"   Kontrol ediliyor: {build_index_path}")
                 if os.path.exists(build_index_path):
-                    print(f"✅ build_index.py pyenv which clapp yanında bulundu: {build_index_path}")
                     return search_dir, build_index_path
                 search_dir = os.path.dirname(search_dir)
-    except Exception as e:
-        print(f"⚠️  pyenv which clapp hatası: {e}")
+    except Exception:
+        pass
     
     # 3. Kesin konum kontrolü
     clapp_home = "/Users/melihburakmemis/Desktop/clapp"
     build_index_path = os.path.join(clapp_home, "build_index.py")
-    print(f"🔍 3. Kesin konum kontrolü: {build_index_path}")
     if os.path.exists(build_index_path):
-        print(f"✅ build_index.py kesin konumda bulundu: {build_index_path}")
         return clapp_home, build_index_path
     
     # 4. Fallback: Mevcut çalışma dizininden başlayarak yukarı çık
     search_dir = os.getcwd()
-    print(f"🔍 4. Fallback arama: {search_dir} dizininden başlıyor...")
     while search_dir != os.path.dirname(search_dir):  # Root'a ulaşana kadar
         build_index_path = os.path.join(search_dir, "build_index.py")
-        print(f"   Kontrol ediliyor: {build_index_path}")
         if os.path.exists(build_index_path):
-            print(f"✅ build_index.py bulundu: {build_index_path}")
             return search_dir, build_index_path
         search_dir = os.path.dirname(search_dir)
     
-    print("❌ build_index.py hiçbir yerde bulunamadı!")
     return None, None
 
 
