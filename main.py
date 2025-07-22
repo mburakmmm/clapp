@@ -55,6 +55,9 @@ from dependency_resolver import (
 # Yeni uygulama oluşturma komutu
 from new_command import handle_new_command
 
+# Update komutu
+from update_command import handle_update_command
+
 def main():
     """Ana CLI fonksiyonu"""
     
@@ -78,6 +81,7 @@ def main():
   clapp install app.zip         # ZIP dosyasından uygulama yükle
   clapp uninstall hello-python  # Uygulamayı kaldır
   clapp upgrade hello-python    # Uygulamayı güncelle
+  clapp update-apps [app-name]  # Uygulamaları güncelle (tümü veya belirli)
   clapp validate ./my-app       # Uygulama klasörünü doğrula
   clapp publish "./my app"      # Uygulama yayınla (boşluk için tırnak kullanın)
 
@@ -133,6 +137,10 @@ def main():
     # upgrade komutu
     upgrade_parser = subparsers.add_parser('upgrade', help='Uygulamayı güncelle')
     upgrade_parser.add_argument('app_name', help='Güncellenecek uygulamanın adı')
+    
+    # update-apps komutu (yeni)
+    update_apps_parser = subparsers.add_parser('update-apps', help='Uygulamaları güncelle')
+    update_apps_parser.add_argument('app', nargs='?', help='Güncellenecek uygulama adı (belirtilmezse tümü güncellenir)')
     
     # search komutu
     search_parser = subparsers.add_parser('search', help='Paket ara')
@@ -291,6 +299,11 @@ def main():
             if not success:
                 print(f"❌ {message}")
                 sys.exit(1)
+        
+        elif args.command == 'update-apps':
+            # Yeni update-apps komutu
+            success = handle_update_command(args)
+            sys.exit(0 if success else 1)
         
         elif args.command == 'search':
             success, message = search_remote_packages(args.query)

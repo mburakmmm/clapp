@@ -78,6 +78,7 @@ setup(
         "smart_search",
         "progress_utils",
         "new_command",
+        "update_command",
     ],
     
     # Paket verileri
