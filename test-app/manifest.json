@@ -1,15 +1,1 @@
-{
-  "name": "test-app",
-  "version": "1.0.0",
-  "language": "python",
-  "entry": "main.py",
-  "description": "Basit bir Python Hello World uygulaması",
-  "author": "clapp Developer",
-  "license": "MIT",
-  "tags": [
-    "example",
-    "hello",
-    "python"
-  ],
-  "category": "demo"
-}
+{"name": "test-app", "version": "1.0.0", "language": "python", "entry": "main.py", "description": "Test app"}
