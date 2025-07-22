@@ -131,24 +131,38 @@ def copy_app_to_packages(source_folder: str, app_name: str) -> Tuple[bool, str]:
     except Exception as e:
         return False, f"Kopyalama hatası: {e}"
 
+def find_clapp_root_with_build_index():
+    """
+    Mevcut dizinden başlayarak yukarıya doğru build_index.py ve ana clapp dizinini bulur.
+    Returns: (clapp_root, build_index_path) veya (None, None)
+    """
+    import os
+    search_dir = os.getcwd()
+    while search_dir != os.path.dirname(search_dir):  # Root'a ulaşana kadar
+        build_index_path = os.path.join(search_dir, "build_index.py")
+        if os.path.exists(build_index_path):
+            return search_dir, build_index_path
+        search_dir = os.path.dirname(search_dir)
+    return None, None
+
+
 def update_index() -> Tuple[bool, str]:
     """
     build_index.py script'ini çalıştırarak index.json'u günceller
-    
-    Returns:
-        (success, message)
+    Returns: (success, message)
     """
     try:
-        # build_index.py'yi çalıştır
+        clapp_root, build_index_path = find_clapp_root_with_build_index()
+        if not clapp_root or not build_index_path:
+            return False, "Ana clapp dizini veya build_index.py bulunamadı. Lütfen komutu ana dizinden veya bir alt klasörden çalıştırın."
+        # build_index.py'yi ana dizinde çalıştır
         result = subprocess.run([
-            sys.executable, "build_index.py"
-        ], capture_output=True, text=True, cwd=".")
-        
+            sys.executable, build_index_path
+        ], capture_output=True, text=True, cwd=clapp_root)
         if result.returncode == 0:
             return True, "Index başarıyla güncellendi"
         else:
-            return False, f"Index güncelleme hatası: {result.stderr}"
-            
+            return False, f"Index güncelleme hatası: {result.stderr}\nÇalıştırılan dizin: {clapp_root}"
     except Exception as e:
         return False, f"Index script çalıştırılamadı: {e}"
 
