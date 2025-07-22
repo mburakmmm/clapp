@@ -134,7 +134,7 @@ def copy_app_to_packages(source_folder: str, app_name: str) -> Tuple[bool, str]:
 def find_clapp_root_with_build_index():
     """
     Ana clapp dizinini ve build_index.py'yi bulur.
-    Önce publish_command.py dosyasının konumundan, sonra mevcut çalışma dizininden arar.
+    Önce bilinen ana clapp dizinlerini kontrol eder, sonra mevcut çalışma dizininden arar.
     Returns: (clapp_root, build_index_path) veya (None, None)
     """
     import os
@@ -143,18 +143,21 @@ def find_clapp_root_with_build_index():
     print(f"🔍 Mevcut çalışma dizini: {os.getcwd()}")
     print(f"🔍 publish_command.py konumu: {os.path.dirname(os.path.abspath(__file__))}")
     
-    # 1. publish_command.py dosyasının bulunduğu dizinden başlayarak yukarı çık
-    current_file_dir = os.path.dirname(os.path.abspath(__file__))
-    search_dir = current_file_dir
+    # 1. Bilinen ana clapp dizinlerini kontrol et
+    known_paths = [
+        "/Users/melihburakmemis/Desktop/clapp",  # macOS
+        "/home/melihburakmemis/Desktop/clapp",   # Linux
+        "C:\\Users\\melihburakmemis\\Desktop\\clapp",  # Windows
+        os.path.expanduser("~/Desktop/clapp"),   # Kullanıcının Desktop'ı
+        os.path.expanduser("~/clapp"),           # Kullanıcının home dizini
+    ]
     
-    print(f"🔍 1. Arama: {current_file_dir} dizininden başlıyor...")
-    while search_dir != os.path.dirname(search_dir):  # Root'a ulaşana kadar
-        build_index_path = os.path.join(search_dir, "build_index.py")
-        print(f"   Kontrol ediliyor: {build_index_path}")
+    for clapp_home in known_paths:
+        build_index_path = os.path.join(clapp_home, "build_index.py")
+        print(f"🔍 1. Kontrol ediliyor: {build_index_path}")
         if os.path.exists(build_index_path):
-            print(f"✅ build_index.py bulundu: {build_index_path}")
-            return search_dir, build_index_path
-        search_dir = os.path.dirname(search_dir)
+            print(f"✅ build_index.py bilinen yolda bulundu: {build_index_path}")
+            return clapp_home, build_index_path
     
     # 2. Mevcut çalışma dizininden başlayarak yukarı çık
     search_dir = os.getcwd()
