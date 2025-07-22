@@ -284,9 +284,8 @@ def push_to_clapp_packages_repo(app_name: str, app_version: str) -> Tuple[bool, 
         result = subprocess.run(['git', 'status', '--porcelain'], 
                               capture_output=True, text=True)
         
-        if not result.stdout.strip():
-            os.chdir("..")
-            return True, "Değişiklik yok, push gerekmiyor"
+        # Değişiklik olsun olmasın, her durumda push yap
+        print("📦 Değişiklikler push ediliyor...")
         
         # Değişiklikleri ekle
         subprocess.run(['git', 'add', '.'], check=True)
