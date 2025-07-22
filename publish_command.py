@@ -133,16 +133,29 @@ def copy_app_to_packages(source_folder: str, app_name: str) -> Tuple[bool, str]:
 
 def find_clapp_root_with_build_index():
     """
-    Mevcut dizinden başlayarak yukarıya doğru build_index.py ve ana clapp dizinini bulur.
+    publish_command.py dosyasının konumunu baz alarak ana clapp dizinini ve build_index.py'yi bulur.
     Returns: (clapp_root, build_index_path) veya (None, None)
     """
     import os
+    # publish_command.py dosyasının bulunduğu dizini al
+    current_file_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # Bu dizinden başlayarak yukarı çık ve build_index.py'yi ara
+    search_dir = current_file_dir
+    while search_dir != os.path.dirname(search_dir):  # Root'a ulaşana kadar
+        build_index_path = os.path.join(search_dir, "build_index.py")
+        if os.path.exists(build_index_path):
+            return search_dir, build_index_path
+        search_dir = os.path.dirname(search_dir)
+    
+    # Eğer bulunamazsa, mevcut çalışma dizininden de dene
     search_dir = os.getcwd()
     while search_dir != os.path.dirname(search_dir):  # Root'a ulaşana kadar
         build_index_path = os.path.join(search_dir, "build_index.py")
         if os.path.exists(build_index_path):
             return search_dir, build_index_path
         search_dir = os.path.dirname(search_dir)
+    
     return None, None
 
 
