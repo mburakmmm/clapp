@@ -155,6 +155,11 @@ def update_index() -> Tuple[bool, str]:
         clapp_root, build_index_path = find_clapp_root_with_build_index()
         if not clapp_root or not build_index_path:
             return False, "Ana clapp dizini veya build_index.py bulunamadı. Lütfen komutu ana dizinden veya bir alt klasörden çalıştırın."
+        
+        # Debug bilgisi
+        print(f"🔍 Bulunan clapp_root: {clapp_root}")
+        print(f"🔍 Bulunan build_index_path: {build_index_path}")
+        
         # build_index.py'yi ana dizinde çalıştır
         result = subprocess.run([
             sys.executable, build_index_path
