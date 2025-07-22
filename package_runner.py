@@ -47,6 +47,7 @@ class LanguageRunner:
 LANGUAGE_RUNNERS: Dict[str, LanguageRunner] = {
     'python': LanguageRunner('Python', 'python', '.py'),
     'lua': LanguageRunner('Lua', 'lua', '.lua'),
+    'love2d': LanguageRunner('Love2D', 'love', '.lua'),  # Love2D için özel runner
     'dart': LanguageRunner('Dart', 'dart', '.dart'),
     'go': LanguageRunner('Go', 'go', '.go'),
     'rust': LanguageRunner('Rust', 'cargo', '.rs'),

@@ -38,6 +38,19 @@
     "subdir": "cloud-web-browser"
   },
   {
+    "name": "luaozgur-moba",
+    "version": "1.0.0",
+    "language": "lua",
+    "description": "League of Legends benzeri MOBA oyunu",
+    "entry": "main.lua",
+    "dependencies": [
+      "love2d"
+    ],
+    "folder": "luaozgur-moba",
+    "repo_url": "https://github.com/mburakmmm/clapp-packages",
+    "subdir": "luaozgur-moba"
+  },
+  {
     "name": "test-app-2",
     "version": "1.0.0",
     "language": "python",
