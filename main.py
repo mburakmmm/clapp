@@ -79,7 +79,7 @@ def main():
   clapp uninstall hello-python  # Uygulamayı kaldır
   clapp upgrade hello-python    # Uygulamayı güncelle
   clapp validate ./my-app       # Uygulama klasörünü doğrula
-  clapp publish ./my-app        # Uygulama yayınla
+  clapp publish "./my app"      # Uygulama yayınla (boşluk için tırnak kullanın)
 
 🔗 Bağımlılık Komutları:
   clapp dependency check        # Sistem geneli bağımlılık kontrolü
@@ -149,7 +149,7 @@ def main():
     
     # publish komutu
     publish_parser = subparsers.add_parser('publish', help='Paket yayınla')
-    publish_parser.add_argument('app_path', help='Yayınlanacak uygulama dizini')
+    publish_parser.add_argument('app_path', nargs='+', help='Yayınlanacak uygulama dizini (boşluk içeren yollar için tırnak kullanın)')
     publish_parser.add_argument('--push', action='store_true', help='clapp-packages reposuna otomatik push et')
     
     # remote komutu
@@ -316,7 +316,9 @@ def main():
         
         elif args.command == 'publish':
             # Yeni publish komutu
-            success, message = publish_app(args.app_path, push_to_github=args.push)
+            # app_path artık bir liste, boşlukları birleştir
+            app_path = ' '.join(args.app_path)
+            success, message = publish_app(app_path, push_to_github=args.push)
             if not success:
                 print(f"❌ {message}")
                 sys.exit(1)
