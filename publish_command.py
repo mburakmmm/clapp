@@ -272,10 +272,17 @@ def push_to_clapp_packages_repo(app_name: str, app_version: str) -> Tuple[bool, 
         shutil.copytree(source_app, target_app)
         print(f"✅ {app_name} uygulaması clapp-packages reposuna kopyalandı")
         
-        # index.json'u da kopyala
-        if os.path.exists("index.json"):
-            shutil.copy("index.json", os.path.join(packages_repo_path, "index.json"))
-            print("✅ index.json clapp-packages reposuna kopyalandı")
+        # Ana clapp dizinindeki index.json'u kopyala
+        clapp_root, _ = find_clapp_root_with_build_index()
+        if clapp_root:
+            source_index = os.path.join(clapp_root, "index.json")
+            if os.path.exists(source_index):
+                shutil.copy(source_index, os.path.join(packages_repo_path, "index.json"))
+                print("✅ index.json clapp-packages reposuna kopyalandı")
+            else:
+                print("⚠️  Ana clapp dizininde index.json bulunamadı")
+        else:
+            print("⚠️  Ana clapp dizini bulunamadı, index.json kopyalanamadı")
         
         # clapp-packages reposuna git işlemleri
         os.chdir(packages_repo_path)
