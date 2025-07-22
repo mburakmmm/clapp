@@ -297,7 +297,16 @@ def push_to_clapp_packages_repo(app_name: str, app_version: str) -> Tuple[bool, 
         subprocess.run(['git', 'commit', '-m', commit_message], check=True)
         
         # Push et
-        subprocess.run(['git', 'push', 'origin', 'main'], check=True)
+        try:
+            # Önce pull yap
+            print("📥 Remote değişiklikleri çekiliyor...")
+            subprocess.run(['git', 'pull', 'origin', 'main'], check=True)
+        except subprocess.CalledProcessError:
+            print("⚠️  Pull başarısız, force push yapılıyor...")
+            subprocess.run(['git', 'push', 'origin', 'main', '--force'], check=True)
+        else:
+            # Normal push
+            subprocess.run(['git', 'push', 'origin', 'main'], check=True)
         
         # Ana dizine geri dön
         os.chdir("..")
