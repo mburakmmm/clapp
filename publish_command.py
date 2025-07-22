@@ -79,7 +79,10 @@ def copy_app_to_packages(source_folder: str, app_name: str) -> Tuple[bool, str]:
             shutil.rmtree(target_path)
             print(f"⚠️  Mevcut {app_name} klasörü silindi")
         
-        # Hariç tutulacak dosya ve klasörler
+        # Önce tüm klasörü kopyala
+        shutil.copytree(source_folder, target_path)
+        
+        # Gereksiz dosya ve klasörleri sil
         exclude_patterns = [
             '.venv', '__pycache__', '.git', '.gitignore', '.DS_Store',
             '*.pyc', '*.pyo', '*.pyd', '*.so', '*.dll', '*.dylib',
@@ -89,45 +92,44 @@ def copy_app_to_packages(source_folder: str, app_name: str) -> Tuple[bool, str]:
             'packages'  # packages klasörünü de hariç tut
         ]
         
-        def should_exclude(path):
-            """Dosya/klasörün hariç tutulup tutulmayacağını kontrol eder"""
-            basename = os.path.basename(path)
-            rel_path = os.path.relpath(path, source_folder)
-            
-            for pattern in exclude_patterns:
-                if pattern.startswith('*'):
-                    # *.ext formatındaki pattern'ler
-                    if basename.endswith(pattern[1:]):
-                        return True
-                else:
-                    # Tam eşleşme
-                    if basename == pattern or rel_path == pattern:
-                        return True
-            return False
-        
-        # Önce hedef klasörü oluştur
-        os.makedirs(target_path, exist_ok=True)
-        
-        # Dosyaları tek tek kopyala (hariç tutma ile)
-        for root, dirs, files in os.walk(source_folder):
-            # Dizinleri filtrele
-            dirs[:] = [d for d in dirs if not should_exclude(os.path.join(root, d))]
-            
-            # Hedef dizini oluştur
-            rel_root = os.path.relpath(root, source_folder)
-            target_root = os.path.join(target_path, rel_root)
-            os.makedirs(target_root, exist_ok=True)
-            
-            # Dosyaları kopyala
-            for file in files:
-                source_file = os.path.join(root, file)
+        def remove_excluded_files(path):
+            """Gereksiz dosya ve klasörleri sil"""
+            for root, dirs, files in os.walk(path, topdown=False):
+                # Dosyaları sil
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    basename = os.path.basename(file_path)
+                    
+                    for pattern in exclude_patterns:
+                        if pattern.startswith('*'):
+                            if basename.endswith(pattern[1:]):
+                                try:
+                                    os.remove(file_path)
+                                    break
+                                except:
+                                    pass
+                        else:
+                            if basename == pattern:
+                                try:
+                                    os.remove(file_path)
+                                    break
+                                except:
+                                    pass
                 
-                # Dosyayı hariç tut
-                if should_exclude(source_file):
-                    continue
-                
-                target_file = os.path.join(target_root, file)
-                shutil.copy2(source_file, target_file)
+                # Dizinleri sil
+                for dir_name in dirs:
+                    dir_path = os.path.join(root, dir_name)
+                    
+                    for pattern in exclude_patterns:
+                        if dir_name == pattern:
+                            try:
+                                shutil.rmtree(dir_path)
+                                break
+                            except:
+                                pass
+        
+        # Gereksiz dosyaları sil
+        remove_excluded_files(target_path)
         
         print(f"✅ {app_name} -> packages/{app_name} kopyalandı")
         
