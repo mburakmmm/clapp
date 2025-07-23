@@ -25,10 +25,12 @@ def load_index() -> Tuple[bool, Dict[str, Any], str]:
         index_url = "https://raw.githubusercontent.com/mburakmmm/clapp-packages/main/index.json"
         show_info_message("🔄 GitHub'dan index.json indiriliyor...")
         
-        with urllib.request.urlopen(index_url) as response:
+        with urllib.request.urlopen(index_url, timeout=10) as response:
             index_data = json.loads(response.read().decode('utf-8'))
         
         return True, index_data, ""
+    except urllib.error.URLError as e:
+        return False, {}, f"Network hatası: {e}"
     except Exception as e:
         return False, {}, f"Index yükleme hatası: {e}"
 

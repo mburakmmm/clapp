@@ -10,7 +10,7 @@ yerel apps/ klasörüne kurar.
 import os
 import json
 import shutil
-import requests
+import urllib.request
 import zipfile
 import tempfile
 import sys
@@ -43,24 +43,15 @@ def load_index(index_path: str = "index.json") -> Tuple[bool, str, Optional[list
         # Her zaman GitHub'dan güncel index.json'u indir
         print("🔄 GitHub'dan index.json indiriliyor...")
         url = "https://raw.githubusercontent.com/mburakmmm/clapp-packages/main/index.json"
-        response = requests.get(url, timeout=10)
         
-        if response.status_code == 200:
-            apps = response.json()
+        with urllib.request.urlopen(url, timeout=10) as response:
+            apps = json.loads(response.read().decode('utf-8'))
             # Yerel kopyasını kaydet
             with open(index_path, 'w', encoding='utf-8') as f:
                 json.dump(apps, f, indent=2, ensure_ascii=False)
             return True, "GitHub'dan index indirildi", apps
-        else:
-            # GitHub'dan indirilemezse yerel dosyayı dene
-            if os.path.exists(index_path):
-                with open(index_path, 'r', encoding='utf-8') as f:
-                    apps = json.load(f)
-                return True, "Yerel index yüklendi (GitHub erişilemez)", apps
-            else:
-                return False, f"GitHub'dan index indirilemedi: {response.status_code}", None
             
-    except requests.RequestException as e:
+    except urllib.error.URLError as e:
         # Network hatası durumunda yerel dosyayı dene
         if os.path.exists(index_path):
             with open(index_path, 'r', encoding='utf-8') as f:
