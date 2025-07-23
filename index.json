@@ -85,7 +85,7 @@
   },
   {
     "name": "luaozgur-moba",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "language": "lua",
     "description": "League of Legends benzeri MOBA oyunu",
     "entry": "main.lua",

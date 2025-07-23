@@ -72,19 +72,23 @@ def check_for_updates(app_name: str, current_version: str, index_data: Dict[str,
     Args:
         app_name: Uygulama adı
         current_version: Mevcut sürüm
-        index_data: Index verisi
+        index_data: Index verisi (liste formatında)
         
     Returns:
         En son sürüm (güncelleme varsa) veya None
     """
-    if app_name not in index_data:
-        return None
+    # Index verisi liste formatında, uygulamayı ara
+    app_versions = []
+    for app in index_data:
+        if app['name'] == app_name:
+            app_versions.append(app['version'])
     
-    app_versions = index_data[app_name]
+    if not app_versions:
+        return None
     
     # En son sürümü bul
     latest_version = None
-    for version in app_versions.keys():
+    for version in app_versions:
         if latest_version is None or version > latest_version:
             latest_version = version
     
@@ -100,13 +104,22 @@ def download_and_install_update(app_name: str, version: str, index_data: Dict[st
     Args:
         app_name: Uygulama adı
         version: Yüklenecek sürüm
-        index_data: Index verisi
+        index_data: Index verisi (liste formatında)
         
     Returns:
         (success, message)
     """
     try:
-        app_info = index_data[app_name][version]
+        # Index verisinden uygulama bilgilerini bul
+        app_info = None
+        for app in index_data:
+            if app['name'] == app_name and app['version'] == version:
+                app_info = app
+                break
+        
+        if not app_info:
+            return False, f"Uygulama bilgisi bulunamadı: {app_name} v{version}"
+        
         repo_url = app_info['repo_url']
         subdir = app_info['subdir']
         
