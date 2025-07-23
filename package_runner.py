@@ -43,11 +43,38 @@ class LanguageRunner:
         except FileNotFoundError:
             return False
 
+class Love2DRunner(LanguageRunner):
+    """Love2D oyunları için özel runner"""
+    
+    def __init__(self):
+        super().__init__("Love2D", "love", ".lua")
+    
+    def run(self, entry_file: str, app_path: str) -> Tuple[bool, str]:
+        """
+        Love2D oyununu çalıştırır (klasör bazlı)
+        
+        Args:
+            entry_file: Kullanılmaz (Love2D klasör bazlı çalışır)
+            app_path: Oyun klasörü
+            
+        Returns:
+            (success, error_message)
+        """
+        try:
+            # Love2D için klasörü çalıştır (entry_file parametresini yok say)
+            result = subprocess.run([self.command, app_path], 
+                                  capture_output=False)
+            return result.returncode == 0, ""
+        except FileNotFoundError:
+            return False, f"{self.name} yüklü değil veya PATH'te bulunamadı."
+        except Exception as e:
+            return False, f"Çalıştırma hatası: {str(e)}"
+
 # Desteklenen diller için runner'lar
 LANGUAGE_RUNNERS: Dict[str, LanguageRunner] = {
     'python': LanguageRunner('Python', 'python', '.py'),
     'lua': LanguageRunner('Lua', 'lua', '.lua'),
-    'love2d': LanguageRunner('Love2D', 'love', '.lua'),  # Love2D için özel runner
+    'love2d': Love2DRunner(),  # Love2D için özel runner
     'dart': LanguageRunner('Dart', 'dart', '.dart'),
     'go': LanguageRunner('Go', 'go', '.go'),
     'rust': LanguageRunner('Rust', 'cargo', '.rs'),
@@ -112,11 +139,6 @@ def run_app(app_name: str) -> bool:
     entry_file = manifest['entry']
     entry_path = os.path.join(app_path, entry_file)
     
-    # Giriş dosyasının varlığını kontrol et
-    if not os.path.exists(entry_path):
-        print(f"Hata: Giriş dosyası '{entry_file}' bulunamadı.")
-        return False
-    
     # Dile göre runner al
     language = manifest['language'].lower()
     runner = get_runner_for_language(language)
@@ -125,6 +147,18 @@ def run_app(app_name: str) -> bool:
         supported = ', '.join(LANGUAGE_RUNNERS.keys())
         print(f"Hata: Desteklenmeyen dil '{language}'. Desteklenen diller: {supported}")
         return False
+    
+    # Love2D için özel kontrol
+    if language == 'love2d':
+        # Love2D için entry dosyası kontrolü gerekmez, klasör yeterli
+        if not os.path.exists(app_path):
+            print(f"Hata: Uygulama klasörü bulunamadı: {app_path}")
+            return False
+    else:
+        # Diğer diller için entry dosyası kontrolü
+        if not os.path.exists(entry_path):
+            print(f"Hata: Giriş dosyası '{entry_file}' bulunamadı.")
+            return False
         
     # Uygulamayı çalıştır
     success, error_msg = runner.run(entry_file, app_path)
