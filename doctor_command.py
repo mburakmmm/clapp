@@ -12,14 +12,56 @@ import shutil
 import platform
 import subprocess
 from pathlib import Path
-from check_env import (
-    check_python_version,
-    check_clapp_in_path,
-    check_platform_info,
-    check_python_executable,
-    check_working_directory,
-    check_permissions,
-)
+# check_env fonksiyonları buraya taşındı
+
+def check_python_version():
+    """Python sürümünü kontrol eder"""
+    version = sys.version_info
+    if version.major >= 3 and version.minor >= 8:
+        return True, f"Python {version.major}.{version.minor}.{version.micro} uygun"
+    else:
+        return False, f"Python {version.major}.{version.minor}.{version.micro} çok eski (3.8+ gerekli)"
+
+def check_clapp_in_path():
+    """clapp'in PATH'te olup olmadığını kontrol eder"""
+    if shutil.which("clapp"):
+        return True, "clapp PATH'te mevcut"
+    else:
+        return False, "clapp PATH'te bulunamadı"
+
+def check_platform_info():
+    """Platform bilgilerini kontrol eder"""
+    system = platform.system()
+    release = platform.release()
+    machine = platform.machine()
+    return True, f"Platform: {system} {release} ({machine})"
+
+def check_python_executable():
+    """Python executable'ını kontrol eder"""
+    python_path = sys.executable
+    if python_path:
+        return True, f"Python executable: {python_path}"
+    else:
+        return False, "Python executable bulunamadı"
+
+def check_working_directory():
+    """Çalışma dizinini kontrol eder"""
+    cwd = Path.cwd()
+    if cwd.exists():
+        return True, f"Çalışma dizini: {cwd}"
+    else:
+        return False, "Çalışma dizini bulunamadı"
+
+def check_permissions():
+    """Dosya izinlerini kontrol eder"""
+    try:
+        # Test dosyası oluştur
+        test_file = Path("test_permissions.tmp")
+        test_file.write_text("test")
+        test_file.unlink()
+        return True, "Dosya yazma izinleri uygun"
+    except Exception as e:
+        return False, f"Dosya yazma izni yok: {e}"
 
 def check_clapp_config():
     """clapp konfigürasyon dizinini kontrol eder"""
