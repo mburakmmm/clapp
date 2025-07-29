@@ -57,8 +57,7 @@ def load_index(index_path: str = "index.json") -> Tuple[bool, str, Optional[list
             with open(index_path, 'r', encoding='utf-8') as f:
                 apps = json.load(f)
             return True, "Yerel index yüklendi (network hatası)", apps
-        else:
-            return False, f"Network hatası: {e}", None
+        else:return False, f"Network hatası: {e}", None
     except json.JSONDecodeError as e:
         return False, f"JSON parse hatası: {e}", None
     except Exception as e:

@@ -11,8 +11,10 @@ import os
 import shutil
 import subprocess
 import sys
+import json
 from pathlib import Path
 from typing import Tuple, Optional
+import time
 
 from manifest_validator import validate_manifest_verbose
 from manifest_schema import load_manifest
@@ -226,13 +228,13 @@ def update_index() -> Tuple[bool, str]:
 
 def push_to_clapp_packages_repo(app_name: str, app_version: str) -> Tuple[bool, str]:
     """
-    Değişiklikleri clapp-packages reposuna push eder
+    Uygulamayı direkt GitHub clapp-packages reposuna push eder
     
     Returns:
         (success, message)
     """
     try:
-        print("4️⃣ clapp-packages reposuna push ediliyor...")
+        print("2️⃣ GitHub repo güncelleniyor...")
         
         # clapp-packages reposunu kontrol et
         packages_repo_path = "./clapp-packages-repo"
@@ -245,15 +247,25 @@ def push_to_clapp_packages_repo(app_name: str, app_version: str) -> Tuple[bool, 
                 packages_repo_path
             ], check=True, cwd=".")
         
-        # Ana clapp dizinindeki packages klasöründen uygulamayı kopyala
-        clapp_root, _ = find_clapp_root_with_build_index()
-        if not clapp_root:
-            return False, "Ana clapp dizini bulunamadı"
+        # Publish edilecek uygulama klasörünü bul
+        app_folder = None
+        for root, dirs, files in os.walk("."):
+            if "manifest.json" in files:
+                manifest_path = os.path.join(root, "manifest.json")
+                try:
+                    with open(manifest_path, 'r', encoding='utf-8') as f:
+                        manifest = json.load(f)
+                    if manifest.get('name') == app_name:
+                        app_folder = root
+                        break
+                except:
+                    continue
         
-        source_app = os.path.join(clapp_root, "packages", app_name)
+        if not app_folder:
+            return False, f"{app_name} uygulaması bulunamadı"
+        
+        # GitHub repo'ya uygulamayı kopyala
         target_app = os.path.join(packages_repo_path, "packages", app_name)
-        
-        # Hedef packages klasörünü oluştur (yoksa)
         target_packages = os.path.join(packages_repo_path, "packages")
         os.makedirs(target_packages, exist_ok=True)
         
@@ -262,77 +274,68 @@ def push_to_clapp_packages_repo(app_name: str, app_version: str) -> Tuple[bool, 
             shutil.rmtree(target_app)
         
         # Uygulamayı kopyala
-        shutil.copytree(source_app, target_app)
-        print(f"✅ {app_name} uygulaması clapp-packages reposuna kopyalandı")
+        shutil.copytree(app_folder, target_app)
+        print(f"✅ {app_name} uygulaması GitHub repo'ya kopyalandı")
         
-        # Ana clapp dizinindeki index.json'u kopyala
-        clapp_root, _ = find_clapp_root_with_build_index()
-        if clapp_root:
-            source_index = os.path.join(clapp_root, "index.json")
-            if os.path.exists(source_index):
-                shutil.copy(source_index, os.path.join(packages_repo_path, "index.json"))
-                print("✅ index.json clapp-packages reposuna kopyalandı")
-            else:
-                print("⚠️  Ana clapp dizininde index.json bulunamadı")
-        else:
-            print("⚠️  Ana clapp dizini bulunamadı, index.json kopyalanamadı")
-        
-        # clapp-packages reposuna git işlemleri
+        # GitHub repo'da index.json'u güncelle
         os.chdir(packages_repo_path)
         
-        # Git durumunu kontrol et
+        # build_index.py'yi GitHub repo'da çalıştır
+        if os.path.exists("build_index.py"):
+            result = subprocess.run([sys.executable, "build_index.py"], 
+                                  capture_output=True, text=True)
+            if result.returncode == 0:
+                print("✅ GitHub repo'da index.json güncellendi")
+            else:
+                print(f"⚠️  Index güncelleme hatası: {result.stderr}")
+        else:
+            print("⚠️  GitHub repo'da build_index.py bulunamadı")
+        
+        # Git işlemleri
         result = subprocess.run(['git', 'status', '--porcelain'], 
                               capture_output=True, text=True)
         
-        # Working tree'de değişiklik var mı kontrol et
         if result.stdout.strip():
-            # Değişiklik var, add ve commit yap
             print("📦 Değişiklikler commit ediliyor...")
             subprocess.run(['git', 'add', '.'], check=True)
             
-            # Commit oluştur
             commit_message = f"📦 Publish {app_name} v{app_version}\n\n- {app_name} uygulaması packages/ klasörüne eklendi\n- index.json güncellendi\n- Otomatik publish işlemi"
             subprocess.run(['git', 'commit', '-m', commit_message], check=True)
         else:
-            # Working tree temiz, sadece push yapılıyor...
             print("📦 Working tree temiz, sadece push yapılıyor...")
         
         # Push et
         try:
-            # Önce pull yap
             print("📥 Remote değişiklikleri çekiliyor...")
             subprocess.run(['git', 'pull', 'origin', 'main'], check=True)
         except subprocess.CalledProcessError:
             print("⚠️  Pull başarısız, force push yapılıyor...")
             subprocess.run(['git', 'push', 'origin', 'main', '--force'], check=True)
         else:
-            # Normal push
             subprocess.run(['git', 'push', 'origin', 'main'], check=True)
         
         # Ana dizine geri dön
         os.chdir("..")
         
-        return True, "clapp-packages reposuna başarıyla push edildi"
+        return True, "GitHub repo başarıyla güncellendi"
         
     except subprocess.CalledProcessError as e:
-        # Ana dizine geri dön
         if os.getcwd() != os.path.abspath("."):
             os.chdir("..")
         return False, f"Git işlemi hatası: {e}"
     except Exception as e:
-        # Ana dizine geri dön
         if os.getcwd() != os.path.abspath("."):
             os.chdir("..")
         return False, f"Push hatası: {e}"
 
-def publish_app(folder_path: str, force: bool = False, push_to_github: bool = False) -> Tuple[bool, str]:
+def publish_app(folder_path: str, force: bool = False, push_to_github: bool = True) -> Tuple[bool, str]:
     """
-    Ana publish fonksiyonu
+    Ana publish fonksiyonu - GitHub-First yaklaşım
     
     Args:
         folder_path: Publish edilecek uygulama klasörü
         force: Zorla üzerine yaz
-        push_to_github: clapp-packages reposuna push et
+        push_to_github: clapp-packages reposuna push et (varsayılan: True)
         
     Returns:
         (success, message)
@@ -341,7 +344,7 @@ def publish_app(folder_path: str, force: bool = False, push_to_github: bool = Fa
     print("=" * 50)
     
     # 1. Klasörü doğrula
-    print("1️⃣ Uygulama doğrulanıyor...")
+    print("1️⃣ Uygulama doğruluyor...")
     is_valid, message, manifest = validate_app_folder(folder_path)
     
     if not is_valid:
@@ -351,25 +354,64 @@ def publish_app(folder_path: str, force: bool = False, push_to_github: bool = Fa
     app_version = manifest['version']
     print(f"✅ {app_name} v{app_version} doğrulandı")
     
-    # 2. Uygulamayı packages klasörüne kopyala
-    print("2️⃣ Uygulama kopyalanıyor...")
-    success, message = copy_app_to_packages(folder_path, app_name)
+    # 2. GitHub repo'yu güncelle
+    print("2️⃣ GitHub repo güncelleniyor...")
+    success, message = push_to_clapp_packages_repo(app_name, app_version)
     if not success:
         return False, message
     
-    # 3. Index güncelle
-    print("3️⃣ Index güncelleniyor...")
-    success, message = update_index()
+    # 3. Lokal packages klasörünü GitHub'dan senkronize et
+    print("3️⃣ Lokal packages klasörü senkronize ediliyor...")
+    success, message = sync_local_packages_from_github()
     if not success:
         return False, message
     
-    # 4. Eğer push isteniyorsa, clapp-packages reposuna push et
-    if push_to_github:
-        success, message = push_to_clapp_packages_repo(app_name, app_version)
-        if not success:
-            return False, message
-    
-    return True, f"🎉 '{app_name}' başarıyla publish edildi! Index güncellendi."
+    return True, f"🎉 '{app_name}' başarıyla GitHub'a publish edildi!"
+
+def sync_local_packages_from_github() -> Tuple[bool, str]:
+    """
+    GitHub repo'dan lokal packages klasörünü senkronize eder
+    """
+    try:
+        packages_repo_path = "./clapp-packages-repo"
+        
+        if not os.path.exists(packages_repo_path):
+            return False, "clapp-packages repo bulunamadı"
+        
+        # GitHub repo'dan packages klasörünü kopyala
+        clapp_root, _ = find_clapp_root_with_build_index()
+        if not clapp_root:
+            return False, "Ana clapp dizini bulunamadı"
+        
+        source_packages = os.path.join(packages_repo_path, "packages")
+        target_packages = os.path.join(clapp_root, "packages")
+        
+        if os.path.exists(source_packages):
+            # Mevcut packages klasörünü yedekle
+            backup_dir = os.path.join(clapp_root, "backup_current")
+            os.makedirs(backup_dir, exist_ok=True)
+            
+            if os.path.exists(target_packages):
+                backup_path = os.path.join(backup_dir, f"packages_backup_{int(time.time())}")
+                shutil.move(target_packages, backup_path)
+                print(f"📦 Mevcut packages klasörü yedeklendi: {backup_path}")
+            
+            # GitHub'dan packages klasörünü kopyala
+            shutil.copytree(source_packages, target_packages)
+            print("✅ GitHub'dan packages klasörü senkronize edildi")
+        
+        # GitHub'dan index.json'u kopyala
+        source_index = os.path.join(packages_repo_path, "index.json")
+        target_index = os.path.join(clapp_root, "index.json")
+        
+        if os.path.exists(source_index):
+            shutil.copy(source_index, target_index)
+            print("✅ GitHub'dan index.json senkronize edildi")
+        
+        return True, "Lokal packages klasörü GitHub ile senkronize edildi"
+        
+    except Exception as e:
+        return False, f"Senkronizasyon hatası: {e}"
 
 def main():
     """CLI entry point"""
