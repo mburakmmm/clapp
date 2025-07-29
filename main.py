@@ -66,10 +66,25 @@ def main():
     if first_run:
         print()  # Boş satır ekle
     
+    # Özel formatter sınıfı
+    class CustomHelpFormatter(argparse.RawDescriptionHelpFormatter):
+        def add_usage(self, usage, actions, groups, prefix=None):
+            if prefix is None:
+                prefix = 'usage: '
+            return super().add_usage(usage, actions, groups, prefix)
+        
+        def _format_action(self, action):
+            # positional arguments başlığını gizle
+            if action.dest == 'command':
+                return ''
+            return super()._format_action(action)
+    
     parser = argparse.ArgumentParser(
         prog='clapp',
         description='🚀 clapp - Hafif Çoklu Dil Uygulama Yöneticisi',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
+        formatter_class=CustomHelpFormatter,
+        add_help=False,
+        usage='%(prog)s <command> [options]',
         epilog="""
 📚 Temel Komutlar:
   clapp list                    # Yüklü uygulamaları listele
@@ -107,8 +122,12 @@ def main():
         """
     )
     
+    # Help argümanını manuel ekle
+    parser.add_argument('-h', '--help', action='help', default=argparse.SUPPRESS,
+                       help='Bu yardım mesajını göster ve çık')
+    
     # Alt komutlar
-    subparsers = parser.add_subparsers(dest='command')
+    subparsers = parser.add_subparsers(dest='command', metavar='')
     
     # run komutu
     run_parser = subparsers.add_parser('run', help='Yüklü bir uygulamayı çalıştır')
