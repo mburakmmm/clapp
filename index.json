@@ -1,5 +1,19 @@
 [
   {
+    "name": "clapp-store",
+    "version": "1.0.0",
+    "language": "python",
+    "description": "Clapp paket yöneticisinin grafiksel kullanıcı arayüzü",
+    "entry": "main.py",
+    "dependencies": [
+      "flet",
+      "requests"
+    ],
+    "folder": "clapp-store",
+    "repo_url": "https://github.com/mburakmmm/clapp-packages",
+    "subdir": "clapp-store"
+  },
+  {
     "name": "pycloud-os",
     "version": "1.0.0",
     "language": "python",

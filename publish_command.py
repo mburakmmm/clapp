@@ -250,16 +250,11 @@ def push_to_clapp_packages_repo(app_name: str, app_version: str, folder_path: st
         # Publish edilecek uygulama klasörünü bul
         app_folder = None
         
-        print(f"🔍 Debug: folder_path = {folder_path}")
-        print(f"🔍 Debug: app_name = {app_name}")
-        
         if folder_path and os.path.exists(folder_path):
             # Dışarıdan gelen klasör yolunu kullan
             app_folder = folder_path
-            print(f"✅ Debug: Dışarıdan klasör kullanılıyor: {app_folder}")
         else:
             # Mevcut dizinde ara
-            print("🔍 Debug: Mevcut dizinde aranıyor...")
             for root, dirs, files in os.walk("."):
                 if "manifest.json" in files:
                     manifest_path = os.path.join(root, "manifest.json")
@@ -268,7 +263,6 @@ def push_to_clapp_packages_repo(app_name: str, app_version: str, folder_path: st
                             manifest = json.load(f)
                         if manifest.get('name') == app_name:
                             app_folder = root
-                            print(f"✅ Debug: Mevcut dizinde bulundu: {app_folder}")
                             break
                     except:
                         continue
@@ -285,9 +279,35 @@ def push_to_clapp_packages_repo(app_name: str, app_version: str, folder_path: st
         if os.path.exists(target_app):
             shutil.rmtree(target_app)
         
-        # Uygulamayı kopyala
-        shutil.copytree(app_folder, target_app)
-        print(f"✅ {app_name} uygulaması GitHub repo'ya kopyalandı")
+        # Uygulamayı kopyala (güvenli şekilde)
+        try:
+            # Önce temiz bir kopya oluştur
+            temp_dir = f"/tmp/clapp_temp_{app_name}_{int(time.time())}"
+            os.makedirs(temp_dir, exist_ok=True)
+            
+            # Sadece gerekli dosyaları kopyala
+            for item in os.listdir(app_folder):
+                src_item = os.path.join(app_folder, item)
+                dst_item = os.path.join(temp_dir, item)
+                
+                # clapp-packages-repo ve __pycache__ klasörlerini atla
+                if item in ["clapp-packages-repo", "__pycache__", ".git"]:
+                    continue
+                    
+                if os.path.isdir(src_item):
+                    shutil.copytree(src_item, dst_item, ignore=shutil.ignore_patterns("clapp-packages-repo", "__pycache__", ".git"))
+                else:
+                    shutil.copy2(src_item, dst_item)
+            
+            # Temiz kopyayı hedefe taşı
+            if os.path.exists(target_app):
+                shutil.rmtree(target_app)
+            shutil.move(temp_dir, target_app)
+            
+            print(f"✅ {app_name} uygulaması GitHub repo'ya kopyalandı")
+        except Exception as e:
+            print(f"❌ Kopyalama hatası: {e}")
+            return False, f"Kopyalama hatası: {e}"
         
         # GitHub repo'da index.json'u güncelle
         os.chdir(packages_repo_path)
@@ -353,9 +373,6 @@ def publish_app(folder_path: str, force: bool = False, push_to_github: bool = Tr
         (success, message)
     """
     print(f"🚀 Publish başlatılıyor: {folder_path}")
-    print(f"🔍 Debug: folder_path = {folder_path}")
-    print(f"🔍 Debug: force = {force}")
-    print(f"🔍 Debug: push_to_github = {push_to_github}")
     print("=" * 50)
     
     # 1. Klasörü doğrula
@@ -371,9 +388,7 @@ def publish_app(folder_path: str, force: bool = False, push_to_github: bool = Tr
     
     # 2. GitHub repo'yu güncelle
     print("2️⃣ GitHub repo güncelleniyor...")
-    print(f"🔍 Debug: push_to_clapp_packages_repo çağırılıyor...")
     success, message = push_to_clapp_packages_repo(app_name, app_version, folder_path)
-    print(f"🔍 Debug: push_to_clapp_packages_repo sonucu: {success}, {message}")
     if not success:
         return False, message
     
