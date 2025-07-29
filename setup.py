@@ -85,6 +85,7 @@ setup(
         "progress_utils",
         "new_command",
         "update_command",
+        "platform_utils",
     ],
     
     # Paket verileri
@@ -98,6 +99,7 @@ setup(
         "requests>=2.31.0",
         "typing-extensions>=4.0.0; python_version<'3.10'",
         "tqdm>=4.0.0",
+        "packaging>=23.0",
     ],
     
     # Ek gereksinimler
@@ -118,6 +120,9 @@ setup(
     
     # Python sürümü gereksinimleri
     python_requires=">=3.8",
+    
+    # Cross-platform uyumluluk
+    platforms=["Windows", "Linux", "macOS"],
     
     # Konsol komutları
     entry_points={

@@ -4,6 +4,7 @@ import subprocess
 import mimetypes
 from typing import Dict, Callable, Optional, Tuple
 from package_registry import get_manifest
+from platform_utils import run_command_safely, is_windows, get_executable_extension
 
 class LanguageRunner:
     """Dil çalıştırıcıları için temel sınıf"""
@@ -25,9 +26,9 @@ class LanguageRunner:
             (success, error_message)
         """
         try:
-            result = subprocess.run([self.command, entry_file], 
-                                  cwd=app_path, 
-                                  capture_output=False)
+            result = run_command_safely([self.command, entry_file], 
+                                      cwd=app_path, 
+                                      capture_output=False)
             return result.returncode == 0, ""
         except FileNotFoundError:
             return False, f"{self.name} yüklü değil veya PATH'te bulunamadı."
@@ -37,9 +38,9 @@ class LanguageRunner:
     def check_availability(self) -> bool:
         """Dil çalıştırıcısının sistemde mevcut olup olmadığını kontrol eder"""
         try:
-            result = subprocess.run([self.command, "--version"], 
-                                  capture_output=True, 
-                                  text=True)
+            result = run_command_safely([self.command, "--version"], 
+                                      capture_output=True, 
+                                      text=True)
             return result.returncode == 0
         except FileNotFoundError:
             return False
@@ -63,8 +64,8 @@ class Love2DRunner(LanguageRunner):
         """
         try:
             # Love2D için klasörü çalıştır (entry_file parametresini yok say)
-            result = subprocess.run([self.command, app_path], 
-                                  capture_output=False)
+            result = run_command_safely([self.command, app_path], 
+                                      capture_output=False)
             return result.returncode == 0, ""
         except FileNotFoundError:
             return False, f"{self.name} yüklü değil veya PATH'te bulunamadı."

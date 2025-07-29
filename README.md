@@ -35,6 +35,13 @@
 
 ## 📦 Kurulum
 
+### 🖥️ **Cross-Platform Desteği**
+clapp **Windows**, **Linux** ve **macOS**'ta sorunsuz çalışır:
+
+- **Windows**: PowerShell, Command Prompt, Git Bash
+- **Linux**: Ubuntu, Debian, CentOS, Fedora, Arch Linux
+- **macOS**: Terminal, iTerm2
+
 ### PyPI'dan Kurulum
 ```bash
 pip install clapp-pm
@@ -45,6 +52,31 @@ pip install clapp-pm
 git clone https://github.com/mburakmmm/clapp.git
 cd clapp
 pip install -e .
+```
+
+### 🐧 **Linux/macOS Özel Kurulum**
+```bash
+# Homebrew ile (macOS)
+brew install python
+pip install clapp-pm
+
+# APT ile (Ubuntu/Debian)
+sudo apt update
+sudo apt install python3-pip
+pip3 install clapp-pm
+
+# YUM ile (CentOS/RHEL)
+sudo yum install python3-pip
+pip3 install clapp-pm
+```
+
+### 🪟 **Windows Özel Kurulum**
+```cmd
+# PowerShell veya Command Prompt
+python -m pip install clapp-pm
+
+# Git Bash ile
+pip install clapp-pm
 ```
 
 ## 🎯 Hızlı Başlangıç

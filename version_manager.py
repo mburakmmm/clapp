@@ -15,7 +15,31 @@ import json
 import re
 import requests
 from typing import Dict, List, Tuple, Optional, Any
-from packaging import version as pkg_version
+try:
+    from packaging import version as pkg_version
+except ImportError:
+    # Fallback: basit versiyon karşılaştırma
+    import re
+    from typing import Union
+    
+    class SimpleVersion:
+        def __init__(self, version_string: str):
+            self.version_string = version_string
+            self.parts = [int(x) for x in version_string.split('.')]
+        
+        def __lt__(self, other):
+            return self.parts < other.parts
+        
+        def __eq__(self, other):
+            return self.parts == other.parts
+        
+        def __le__(self, other):
+            return self.parts <= other.parts
+    
+    def parse_version(version_string: str) -> SimpleVersion:
+        return SimpleVersion(version_string)
+    
+    pkg_version.parse = parse_version
 from datetime import datetime, timezone
 
 class VersionManager:

@@ -5,6 +5,7 @@ import subprocess
 import importlib
 from pathlib import Path
 from package_registry import get_manifest, app_exists, get_apps_directory
+from platform_utils import run_command_safely, is_windows
 
 def check_dependencies(manifest):
     """
@@ -307,7 +308,7 @@ def check_and_install_python_dependencies(app_path):
             missing_packages.append(pkg)
             try:
                 print(f"📦 {pkg} kuruluyor...")
-                result = subprocess.run([sys.executable, "-m", "pip", "install", pkg], 
+                result = run_command_safely([sys.executable, "-m", "pip", "install", pkg], 
                                       capture_output=True, text=True, timeout=60)
                 if result.returncode == 0:
                     print(f"✅ {pkg} başarıyla kuruldu")
@@ -321,8 +322,8 @@ def check_and_install_python_dependencies(app_path):
     if req_txt_path.exists() and missing_packages:
         try:
             print(f"📦 requirements.txt dosyasından bağımlılıklar kuruluyor...")
-            result = subprocess.run([sys.executable, "-m", "pip", "install", "-r", str(req_txt_path)], 
-                                  capture_output=True, text=True, timeout=120)
+            result = run_command_safely([sys.executable, "-m", "pip", "install", "-r", str(req_txt_path)], 
+                                      capture_output=True, text=True, timeout=120)
             if result.returncode == 0:
                 print("✅ requirements.txt bağımlılıkları kuruldu")
             else:
@@ -366,14 +367,14 @@ def check_and_install_lua_dependencies(app_path):
     dependencies = manifest.get('dependencies', [])
     for pkg in dependencies:
         try:
-            result = subprocess.run(["luarocks", "show", pkg], 
-                                  capture_output=True, text=True, timeout=30)
+            result = run_command_safely(["luarocks", "show", pkg], 
+                                      capture_output=True, text=True, timeout=30)
             if result.returncode != 0:
                 missing_packages.append(pkg)
                 try:
                     print(f"🪨 {pkg} kuruluyor...")
-                    result = subprocess.run(["luarocks", "install", pkg], 
-                                          capture_output=True, text=True, timeout=60)
+                    result = run_command_safely(["luarocks", "install", pkg], 
+                                              capture_output=True, text=True, timeout=60)
                     if result.returncode == 0:
                         print(f"✅ {pkg} başarıyla kuruldu")
                     else:
@@ -433,8 +434,8 @@ def check_engine_availability(app_path):
     
     elif language == "lua":
         try:
-            result = subprocess.run(["luarocks", "show", engine], 
-                                  capture_output=True, text=True, timeout=30)
+            result = run_command_safely(["luarocks", "show", engine], 
+                                      capture_output=True, text=True, timeout=30)
             if result.returncode == 0:
                 engine_info["available"] = True
                 return True, f"Lua modülü '{engine}' kurulu", engine_info
@@ -462,8 +463,8 @@ def get_enhanced_system_dependency_report():
     
     # Pip durumu
     try:
-        result = subprocess.run([sys.executable, "-m", "pip", "--version"], 
-                              capture_output=True, text=True)
+        result = run_command_safely([sys.executable, "-m", "pip", "--version"], 
+                                  capture_output=True, text=True)
         if result.returncode == 0:
             report += f"📦 Pip: {result.stdout.strip()}\n"
         else:
@@ -473,7 +474,7 @@ def get_enhanced_system_dependency_report():
     
     # Lua/Luarocks durumu
     try:
-        result = subprocess.run(["lua", "--version"], capture_output=True, text=True)
+        result = run_command_safely(["lua", "--version"], capture_output=True, text=True)
         if result.returncode == 0:
             report += f"🌙 Lua: {result.stdout.strip()}\n"
         else:
@@ -482,7 +483,7 @@ def get_enhanced_system_dependency_report():
         report += "❌ Lua: Erişilemiyor\n"
     
     try:
-        result = subprocess.run(["luarocks", "--version"], capture_output=True, text=True)
+        result = run_command_safely(["luarocks", "--version"], capture_output=True, text=True)
         if result.returncode == 0:
             report += f"🪨 Luarocks: {result.stdout.strip()}\n"
         else:

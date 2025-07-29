@@ -18,6 +18,10 @@ import time
 
 from manifest_validator import validate_manifest_verbose
 from manifest_schema import load_manifest
+from platform_utils import (
+    is_windows, is_unix, find_executable, get_pyenv_path,
+    run_command_safely, create_temp_path, get_clapp_home
+)
 
 def validate_app_folder(folder_path: str) -> Tuple[bool, str, Optional[dict]]:
     """
@@ -152,12 +156,10 @@ def find_clapp_root_with_build_index():
     import os
     import subprocess
     
-    # 1. which clapp konumundan arama
+    # 1. Cross-platform clapp konumundan arama
     try:
-        result = subprocess.run(['which', 'clapp'], capture_output=True, text=True)
-        if result.returncode == 0:
-            clapp_path = result.stdout.strip()
-            
+        clapp_path = find_executable('clapp')
+        if clapp_path:
             # clapp komutunun bulunduğu dizinden başlayarak yukarı çık
             clapp_dir = os.path.dirname(clapp_path)
             search_dir = clapp_dir
@@ -170,21 +172,24 @@ def find_clapp_root_with_build_index():
     except Exception:
         pass
     
-    # 2. pyenv which clapp konumundan arama
+    # 2. Cross-platform pyenv which clapp konumundan arama
     try:
-        result = subprocess.run(['pyenv', 'which', 'clapp'], capture_output=True, text=True)
-        if result.returncode == 0:
-            clapp_path = result.stdout.strip()
-            
-            # clapp komutunun bulunduğu dizinden başlayarak yukarı çık
-            clapp_dir = os.path.dirname(clapp_path)
-            search_dir = clapp_dir
-            
-            while search_dir != os.path.dirname(search_dir):  # Root'a ulaşana kadar
-                build_index_path = os.path.join(search_dir, "build_index.py")
-                if os.path.exists(build_index_path):
-                    return search_dir, build_index_path
-                search_dir = os.path.dirname(search_dir)
+        pyenv_path = get_pyenv_path()
+        if pyenv_path:
+            result = run_command_safely([pyenv_path, 'which', 'clapp'], 
+                                      capture_output=True, text=True)
+            if result.returncode == 0:
+                clapp_path = result.stdout.strip()
+                
+                # clapp komutunun bulunduğu dizinden başlayarak yukarı çık
+                clapp_dir = os.path.dirname(clapp_path)
+                search_dir = clapp_dir
+                
+                while search_dir != os.path.dirname(search_dir):  # Root'a ulaşana kadar
+                    build_index_path = os.path.join(search_dir, "build_index.py")
+                    if os.path.exists(build_index_path):
+                        return search_dir, build_index_path
+                    search_dir = os.path.dirname(search_dir)
     except Exception:
         pass
     
@@ -236,15 +241,15 @@ def push_to_clapp_packages_repo(app_name: str, app_version: str, folder_path: st
     try:
         print("2️⃣ GitHub repo güncelleniyor...")
         
-        # Geçici dizin oluştur
-        temp_repo_path = f"/tmp/clapp_repo_{int(time.time())}"
+        # Cross-platform geçici dizin oluştur
+        temp_repo_path = create_temp_path("clapp_repo_")
         
         # GitHub'dan geçici olarak klonla
         print("📥 GitHub repo geçici olarak klonlanıyor...")
-        subprocess.run([
+        run_command_safely([
             'git', 'clone', 'https://github.com/mburakmmm/clapp-packages.git', 
             temp_repo_path
-        ], check=True, cwd="/tmp")
+        ], check=True, cwd=os.path.dirname(temp_repo_path))
         
         # Publish edilecek uygulama klasörünü bul
         app_folder = None
@@ -280,8 +285,8 @@ def push_to_clapp_packages_repo(app_name: str, app_version: str, folder_path: st
         
         # Uygulamayı kopyala (güvenli şekilde)
         try:
-            # Önce temiz bir kopya oluştur
-            temp_dir = f"/tmp/clapp_temp_{app_name}_{int(time.time())}"
+            # Cross-platform temiz bir kopya oluştur
+            temp_dir = create_temp_path(f"clapp_temp_{app_name}_")
             os.makedirs(temp_dir, exist_ok=True)
             
             # Sadece gerekli dosyaları kopyala
@@ -313,8 +318,8 @@ def push_to_clapp_packages_repo(app_name: str, app_version: str, folder_path: st
         
         # build_index.py'yi GitHub repo'da çalıştır
         if os.path.exists("build_index.py"):
-            result = subprocess.run([sys.executable, "build_index.py"], 
-                                  capture_output=True, text=True)
+            result = run_command_safely([sys.executable, "build_index.py"], 
+                                      capture_output=True, text=True)
             if result.returncode == 0:
                 print("✅ GitHub repo'da index.json güncellendi")
             else:
@@ -323,27 +328,27 @@ def push_to_clapp_packages_repo(app_name: str, app_version: str, folder_path: st
             print("⚠️  GitHub repo'da build_index.py bulunamadı")
         
         # Git işlemleri
-        result = subprocess.run(['git', 'status', '--porcelain'], 
-                              capture_output=True, text=True)
+        result = run_command_safely(['git', 'status', '--porcelain'], 
+                                  capture_output=True, text=True)
         
         if result.stdout.strip():
             print("📦 Değişiklikler commit ediliyor...")
-            subprocess.run(['git', 'add', '.'], check=True)
+            run_command_safely(['git', 'add', '.'], check=True)
             
             commit_message = f"📦 Publish {app_name} v{app_version}\n\n- {app_name} uygulaması packages/ klasörüne eklendi\n- index.json güncellendi\n- Otomatik publish işlemi"
-            subprocess.run(['git', 'commit', '-m', commit_message], check=True)
+            run_command_safely(['git', 'commit', '-m', commit_message], check=True)
         else:
             print("📦 Working tree temiz, sadece push yapılıyor...")
         
         # Push et
         try:
             print("📥 Remote değişiklikleri çekiliyor...")
-            subprocess.run(['git', 'pull', 'origin', 'main'], check=True)
+            run_command_safely(['git', 'pull', 'origin', 'main'], check=True)
         except subprocess.CalledProcessError:
             print("⚠️  Pull başarısız, force push yapılıyor...")
-            subprocess.run(['git', 'push', 'origin', 'main', '--force'], check=True)
+            run_command_safely(['git', 'push', 'origin', 'main', '--force'], check=True)
         else:
-            subprocess.run(['git', 'push', 'origin', 'main'], check=True)
+            run_command_safely(['git', 'push', 'origin', 'main'], check=True)
         
         # Ana dizine geri dön
         os.chdir("..")
