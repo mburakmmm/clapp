@@ -188,6 +188,45 @@ config.json
 *.clapp.zip
 clapp-packages-repo/
 
+# Development and test directories
+backup_current/
+packages/
+test-app/
+test-app-2/
+test-app-3/
+test-*/
+*-test/
+*-app/
+
+# Build artifacts
+clapp_pm-*/
+clapp-pm-*/
+*.egg-info/
+
+# Cache and temporary files
+.cache/
+temp/
+tmp/
+*.tmp
+*.temp
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
 # Secrets and tokens
 .env
 secrets/
