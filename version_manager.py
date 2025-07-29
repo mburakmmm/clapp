@@ -40,9 +40,24 @@ except ImportError:
         return SimpleVersion(version_string)
     
     # Fallback için pkg_version modülü oluştur
+    class SimpleVersion:
+        def __init__(self, version_string: str):
+            self.version_string = version_string
+            self.parts = [int(x) for x in version_string.split('.')]
+        
+        def __lt__(self, other):
+            return self.parts < other.parts
+        
+        def __eq__(self, other):
+            return self.parts == other.parts
+        
+        def __le__(self, other):
+            return self.parts <= other.parts
+    
     class PkgVersion:
         def __init__(self):
             self.parse = parse_version
+            self.Version = SimpleVersion
     
     pkg_version = PkgVersion()
 from datetime import datetime, timezone
