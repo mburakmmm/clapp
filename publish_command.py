@@ -226,7 +226,7 @@ def update_index() -> Tuple[bool, str]:
     except Exception as e:
         return False, f"Index script çalıştırılamadı: {e}"
 
-def push_to_clapp_packages_repo(app_name: str, app_version: str) -> Tuple[bool, str]:
+def push_to_clapp_packages_repo(app_name: str, app_version: str, folder_path: str = None) -> Tuple[bool, str]:
     """
     Uygulamayı direkt GitHub clapp-packages reposuna push eder
     
@@ -249,20 +249,32 @@ def push_to_clapp_packages_repo(app_name: str, app_version: str) -> Tuple[bool, 
         
         # Publish edilecek uygulama klasörünü bul
         app_folder = None
-        for root, dirs, files in os.walk("."):
-            if "manifest.json" in files:
-                manifest_path = os.path.join(root, "manifest.json")
-                try:
-                    with open(manifest_path, 'r', encoding='utf-8') as f:
-                        manifest = json.load(f)
-                    if manifest.get('name') == app_name:
-                        app_folder = root
-                        break
-                except:
-                    continue
+        
+        print(f"🔍 Debug: folder_path = {folder_path}")
+        print(f"🔍 Debug: app_name = {app_name}")
+        
+        if folder_path and os.path.exists(folder_path):
+            # Dışarıdan gelen klasör yolunu kullan
+            app_folder = folder_path
+            print(f"✅ Debug: Dışarıdan klasör kullanılıyor: {app_folder}")
+        else:
+            # Mevcut dizinde ara
+            print("🔍 Debug: Mevcut dizinde aranıyor...")
+            for root, dirs, files in os.walk("."):
+                if "manifest.json" in files:
+                    manifest_path = os.path.join(root, "manifest.json")
+                    try:
+                        with open(manifest_path, 'r', encoding='utf-8') as f:
+                            manifest = json.load(f)
+                        if manifest.get('name') == app_name:
+                            app_folder = root
+                            print(f"✅ Debug: Mevcut dizinde bulundu: {app_folder}")
+                            break
+                    except:
+                        continue
         
         if not app_folder:
-            return False, f"{app_name} uygulaması bulunamadı"
+            return False, f"{app_name} uygulaması bulunamadı. Lütfen doğru klasör yolunu belirtin."
         
         # GitHub repo'ya uygulamayı kopyala
         target_app = os.path.join(packages_repo_path, "packages", app_name)
@@ -341,6 +353,9 @@ def publish_app(folder_path: str, force: bool = False, push_to_github: bool = Tr
         (success, message)
     """
     print(f"🚀 Publish başlatılıyor: {folder_path}")
+    print(f"🔍 Debug: folder_path = {folder_path}")
+    print(f"🔍 Debug: force = {force}")
+    print(f"🔍 Debug: push_to_github = {push_to_github}")
     print("=" * 50)
     
     # 1. Klasörü doğrula
@@ -356,7 +371,9 @@ def publish_app(folder_path: str, force: bool = False, push_to_github: bool = Tr
     
     # 2. GitHub repo'yu güncelle
     print("2️⃣ GitHub repo güncelleniyor...")
-    success, message = push_to_clapp_packages_repo(app_name, app_version)
+    print(f"🔍 Debug: push_to_clapp_packages_repo çağırılıyor...")
+    success, message = push_to_clapp_packages_repo(app_name, app_version, folder_path)
+    print(f"🔍 Debug: push_to_clapp_packages_repo sonucu: {success}, {message}")
     if not success:
         return False, message
     
