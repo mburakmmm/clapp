@@ -1,6 +1,6 @@
 {
   "app_name": "clapp",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "author": "Melih Burak Memiş",
   "description": "Basit ve güçlü paket yöneticisi",
   "source": "https://github.com/melihburak/clapp",

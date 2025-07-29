@@ -4,7 +4,7 @@ import json
 import subprocess
 import importlib
 from pathlib import Path
-from package_registry import get_manifest, app_exists, get_apps_directory
+from package_registry import get_manifest, app_exists, get_apps_directory, list_packages
 from platform_utils import run_command_safely, is_windows
 
 def check_dependencies(manifest):
