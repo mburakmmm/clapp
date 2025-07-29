@@ -236,16 +236,15 @@ def push_to_clapp_packages_repo(app_name: str, app_version: str, folder_path: st
     try:
         print("2️⃣ GitHub repo güncelleniyor...")
         
-        # clapp-packages reposunu kontrol et
-        packages_repo_path = "./clapp-packages-repo"
+        # Geçici dizin oluştur
+        temp_repo_path = f"/tmp/clapp_repo_{int(time.time())}"
         
-        # Eğer clapp-packages repo klonlanmamışsa, klonla
-        if not os.path.exists(packages_repo_path):
-            print("📥 clapp-packages reposu klonlanıyor...")
-            subprocess.run([
-                'git', 'clone', 'https://github.com/mburakmmm/clapp-packages.git', 
-                packages_repo_path
-            ], check=True, cwd=".")
+        # GitHub'dan geçici olarak klonla
+        print("📥 GitHub repo geçici olarak klonlanıyor...")
+        subprocess.run([
+            'git', 'clone', 'https://github.com/mburakmmm/clapp-packages.git', 
+            temp_repo_path
+        ], check=True, cwd="/tmp")
         
         # Publish edilecek uygulama klasörünü bul
         app_folder = None
@@ -271,8 +270,8 @@ def push_to_clapp_packages_repo(app_name: str, app_version: str, folder_path: st
             return False, f"{app_name} uygulaması bulunamadı. Lütfen doğru klasör yolunu belirtin."
         
         # GitHub repo'ya uygulamayı kopyala
-        target_app = os.path.join(packages_repo_path, "packages", app_name)
-        target_packages = os.path.join(packages_repo_path, "packages")
+        target_app = os.path.join(temp_repo_path, "packages", app_name)
+        target_packages = os.path.join(temp_repo_path, "packages")
         os.makedirs(target_packages, exist_ok=True)
         
         # Eğer hedef uygulama klasörü varsa, sil
@@ -310,7 +309,7 @@ def push_to_clapp_packages_repo(app_name: str, app_version: str, folder_path: st
             return False, f"Kopyalama hatası: {e}"
         
         # GitHub repo'da index.json'u güncelle
-        os.chdir(packages_repo_path)
+        os.chdir(temp_repo_path)
         
         # build_index.py'yi GitHub repo'da çalıştır
         if os.path.exists("build_index.py"):
@@ -348,6 +347,13 @@ def push_to_clapp_packages_repo(app_name: str, app_version: str, folder_path: st
         
         # Ana dizine geri dön
         os.chdir("..")
+        
+        # Geçici dizini temizle
+        try:
+            shutil.rmtree(temp_repo_path)
+            print("🧹 Geçici dizin temizlendi")
+        except:
+            pass
         
         return True, "GitHub repo başarıyla güncellendi"
         
@@ -392,12 +398,6 @@ def publish_app(folder_path: str, force: bool = False, push_to_github: bool = Tr
     if not success:
         return False, message
     
-    # 3. Lokal packages klasörünü GitHub'dan senkronize et
-    print("3️⃣ Lokal packages klasörü senkronize ediliyor...")
-    success, message = sync_local_packages_from_github()
-    if not success:
-        return False, message
-    
     return True, f"🎉 '{app_name}' başarıyla GitHub'a publish edildi!"
 
 def sync_local_packages_from_github() -> Tuple[bool, str]:
@@ -405,10 +405,14 @@ def sync_local_packages_from_github() -> Tuple[bool, str]:
     GitHub repo'dan lokal packages klasörünü senkronize eder
     """
     try:
-        packages_repo_path = "./clapp-packages-repo"
+        # Geçici olarak GitHub'dan klonla
+        temp_repo_path = f"/tmp/clapp_sync_{int(time.time())}"
+        subprocess.run([
+            'git', 'clone', 'https://github.com/mburakmmm/clapp-packages.git', 
+            temp_repo_path
+        ], check=True, cwd="/tmp")
         
-        if not os.path.exists(packages_repo_path):
-            return False, "clapp-packages repo bulunamadı"
+        packages_repo_path = temp_repo_path
         
         # GitHub repo'dan packages klasörünü kopyala
         clapp_root, _ = find_clapp_root_with_build_index()
@@ -439,6 +443,13 @@ def sync_local_packages_from_github() -> Tuple[bool, str]:
         if os.path.exists(source_index):
             shutil.copy(source_index, target_index)
             print("✅ GitHub'dan index.json senkronize edildi")
+        
+        # Geçici dizini temizle
+        try:
+            shutil.rmtree(temp_repo_path)
+            print("🧹 Geçici dizin temizlendi")
+        except:
+            pass
         
         return True, "Lokal packages klasörü GitHub ile senkronize edildi"
         
