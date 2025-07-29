@@ -89,18 +89,41 @@ def update_version(version_type="patch"):
     current_version = version_data["version"]
     major, minor, patch = map(int, current_version.split("."))
     
-    # Version tipine göre güncelle
-    if version_type == "major":
-        major += 1
-        minor = 0
-        patch = 0
-    elif version_type == "minor":
-        minor += 1
-        patch = 0
-    else:  # patch
-        patch += 1
+    # Kullanıcıdan sürüm tipini al
+    print(f"\n🔄 Mevcut sürüm: {current_version}")
+    print("Sürüm güncelleme tipini seçin:")
+    print("1. Major (x.0.0) - Büyük değişiklikler")
+    print("2. Minor (0.x.0) - Yeni özellikler")
+    print("3. Patch (0.0.x) - Hata düzeltmeleri")
+    
+    while True:
+        choice = input("\nSeçiminiz (1/2/3): ").strip()
+        if choice == "1":
+            version_type = "major"
+            major += 1
+            minor = 0
+            patch = 0
+            break
+        elif choice == "2":
+            version_type = "minor"
+            minor += 1
+            patch = 0
+            break
+        elif choice == "3":
+            version_type = "patch"
+            patch += 1
+            break
+        else:
+            print("❌ Geçersiz seçim! 1, 2 veya 3 girin.")
     
     new_version = f"{major}.{minor}.{patch}"
+    
+    # Onay al
+    print(f"\n📋 Sürüm güncellemesi: {current_version} → {new_version}")
+    confirm = input("Devam etmek istiyor musunuz? (y/N): ").strip().lower()
+    if confirm not in ['y', 'yes', 'evet']:
+        print("❌ Sürüm güncellemesi iptal edildi")
+        return None
     
     # version.json güncelle
     version_data["version"] = new_version

@@ -12,9 +12,9 @@ import os
 from pathlib import Path
 
 # Mevcut modülleri import et
-from clapp_core import list_apps, run_app
+from clapp_core import run_app
 from cli_commands import (
-    install_from_remote, upgrade_package, publish_package,
+    install_from_remote, publish_package,
     search_remote_packages, show_package_info, list_all_packages,
     check_system_health, handle_publish_command, handle_install_command,
     handle_uninstall_command, handle_list_command, publish_to_repository
@@ -24,7 +24,7 @@ from remote_registry import list_remote_packages
 
 # Yeni komut modüllerini import et
 from post_install_hint import check_first_run, show_post_install_hint
-from check_env import run_environment_check
+
 from info_command import show_app_info
 from validate_command import validate_app_folder
 from doctor_command import run_doctor
@@ -75,12 +75,12 @@ def main():
   clapp list                    # Yüklü uygulamaları listele
   clapp run hello-python        # hello-python uygulamasını çalıştır
   clapp info hello-python       # Uygulama bilgilerini göster
-  clapp new python my-app       # Yeni Python uygulaması oluştur
+  clapp new                    # Yeni uygulama oluştur
 
 🔧 Yönetim Komutları:
-  clapp install app.zip         # ZIP dosyasından uygulama yükle
+  clapp install app-name        # Uygulama adından yükle
   clapp uninstall hello-python  # Uygulamayı kaldır
-  clapp upgrade hello-python    # Uygulamayı güncelle
+  clapp update-apps hello-python  # Uygulamayı güncelle
   clapp update-apps [app-name]  # Uygulamaları güncelle (tümü veya belirli)
   clapp validate ./my-app       # Uygulama klasörünü doğrula
   clapp publish "./my app"      # Uygulama yayınla (boşluk için tırnak kullanın)
@@ -93,7 +93,7 @@ def main():
   clapp dependency tree app     # Bağımlılık ağacı
 
 🛠️  Sistem Komutları:
-  clapp check-env               # Ortam kontrolü
+  clapp doctor                  # Kapsamlı sistem tanılaması
   clapp doctor                  # Kapsamlı sistem tanılaması
   clapp clean                   # Geçici dosyaları temizle
   clapp where hello-python      # Uygulama konumunu göster
@@ -125,7 +125,7 @@ def main():
     
     # install komutu
     install_parser = subparsers.add_parser('install', help='Uygulama yükle')
-    install_parser.add_argument('source', help='Uygulama adı, zip dosyası veya URL')
+    install_parser.add_argument('source', help='Uygulama adı (GitHub index.json\'dan)')
     install_parser.add_argument('--force', action='store_true', help='Mevcut uygulamanın üzerine yaz')
     install_parser.add_argument('--local', action='store_true', help='Yerel dizinden yükle')
     
@@ -134,9 +134,7 @@ def main():
     uninstall_parser.add_argument('app_name', help='Kaldırılacak uygulamanın adı')
     uninstall_parser.add_argument('--yes', action='store_true', help='Onay sorma')
     
-    # upgrade komutu
-    upgrade_parser = subparsers.add_parser('upgrade', help='Uygulamayı güncelle')
-    upgrade_parser.add_argument('app_name', help='Güncellenecek uygulamanın adı')
+
     
     # update-apps komutu (yeni)
     update_apps_parser = subparsers.add_parser('update-apps', help='Uygulamaları güncelle')
@@ -167,8 +165,7 @@ def main():
     # health komutu
     health_parser = subparsers.add_parser('health', help='Sistem sağlığını kontrol et')
     
-    # check-env komutu (yeni)
-    check_env_parser = subparsers.add_parser('check-env', help='Ortam kontrolü yap')
+
     
     # doctor komutu (yeni)
     doctor_parser = subparsers.add_parser('doctor', help='Kapsamlı sistem tanılaması')
@@ -241,8 +238,8 @@ def main():
     dep_tree_parser.add_argument('app_name', help='Uygulama adı')
     
     # new komutu (yeni)
-    new_parser = subparsers.add_parser('new', help='Yeni uygulama oluştur')
-    new_parser.add_argument('language', nargs='?', help='Programlama dili')
+    new_parser = subparsers.add_parser('new', help='Yeni uygulama oluştur (desteklenen dilleri görmek için: clapp new --list)')
+    new_parser.add_argument('language', nargs='?', help='Programlama dili (python, lua, dart, go, rust, node, bash, multi, universal)')
     new_parser.add_argument('app_name', nargs='?', help='Uygulama adı')
     new_parser.add_argument('--list', action='store_true', help='Mevcut şablonları listele')
     new_parser.add_argument('--target-dir', help='Hedef dizin (opsiyonel)')
@@ -294,11 +291,7 @@ def main():
             print(message)
             sys.exit(0 if success else 1)
         
-        elif args.command == 'upgrade':
-            success, message = upgrade_package(args.app_name)
-            if not success:
-                print(f"❌ {message}")
-                sys.exit(1)
+
         
         elif args.command == 'update-apps':
             # Yeni update-apps komutu
@@ -343,9 +336,7 @@ def main():
         elif args.command == 'health':
             check_system_health()
         
-        elif args.command == 'check-env':
-            success = run_environment_check()
-            sys.exit(0 if success else 1)
+
         
         elif args.command == 'doctor':
             success = run_doctor()
@@ -404,12 +395,21 @@ def main():
         
         elif args.command == 'new':
             # Yeni uygulama oluşturma komutu
-            success, message = handle_new_command(args)
-            if success:
-                print(message)
+            if not args.language and not args.app_name and not args.list:
+                # Sadece 'clapp new' çalıştırıldıysa şablonları listele
+                success, message = handle_new_command(type('Args', (), {'list': True})())
+                if success:
+                    print(message)
+                else:
+                    print(f"❌ {message}")
+                    sys.exit(1)
             else:
-                print(f"❌ {message}")
-                sys.exit(1)
+                success, message = handle_new_command(args)
+                if success:
+                    print(message)
+                else:
+                    print(f"❌ {message}")
+                    sys.exit(1)
             
         elif args.command == 'security':
             if args.action == 'check':

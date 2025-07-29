@@ -278,7 +278,8 @@ def install_from_directory(source_dir, force=False):
         
         app_name = manifest['name']
         
-        # Uygulama zaten var mı kontrol et
+        # Uygulama zaten var mı kontrol et (package_registry ile uyumlu)
+        from package_registry import app_exists
         if app_exists(app_name) and not force:
             return False, f"Uygulama '{app_name}' zaten yüklü. --force kullanarak üzerine yazabilirsiniz."
         
@@ -288,8 +289,10 @@ def install_from_directory(source_dir, force=False):
         if not os.path.exists(entry_path):
             return False, f"Giriş dosyası bulunamadı: {entry_file}"
         
-        # Hedef dizini oluştur
-        target_dir = os.path.join("apps", app_name)
+        # Hedef dizini oluştur (package_registry ile uyumlu)
+        from package_registry import get_apps_directory
+        apps_dir = get_apps_directory()
+        target_dir = os.path.join(apps_dir, app_name)
         
         # Mevcut dizini sil (eğer varsa)
         if os.path.exists(target_dir):

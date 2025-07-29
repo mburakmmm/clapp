@@ -21,20 +21,26 @@ else:
     VERSION = "1.0.0"
     AUTHOR = "Melih Burak Memiş"
 
-# README.md'yi long description olarak kullan
-readme_file = Path("README.md")
-if readme_file.exists():
-    with open(readme_file, 'r', encoding='utf-8') as f:
+# PyPI için özel README dosyasını kullan
+pypi_readme_file = Path("PYPI_README.md")
+if pypi_readme_file.exists():
+    with open(pypi_readme_file, 'r', encoding='utf-8') as f:
         LONG_DESCRIPTION = f.read()
 else:
-    LONG_DESCRIPTION = "Lightweight cross-language app manager for Python and Lua"
+    # Fallback olarak normal README.md'yi kullan
+    readme_file = Path("README.md")
+    if readme_file.exists():
+        with open(readme_file, 'r', encoding='utf-8') as f:
+            LONG_DESCRIPTION = f.read()
+    else:
+        LONG_DESCRIPTION = "Universal multi-language application manager with 30+ programming language support"
 
 setup(
     name="clapp-pm",
     version=VERSION,
     author=AUTHOR,
     author_email="mburakmemiscy@gmail.com",
-    description="Lightweight cross-language app manager for Python and Lua",
+    description="Universal multi-language application manager with 30+ programming language support",
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
     url="https://github.com/mburakmmm/clapp",
@@ -135,7 +141,9 @@ setup(
         "Programming Language :: Python :: 3.12",
         "Topic :: Software Development :: Libraries :: Python Modules",
         "Topic :: System :: Software Distribution",
+        "Topic :: System :: Installation/Setup",
         "Topic :: Utilities",
+        "Topic :: Software Development :: Build Tools",
         "Environment :: Console",
         "Natural Language :: Turkish",
         "Natural Language :: English",
@@ -145,15 +153,28 @@ setup(
     keywords=[
         "package-manager",
         "app-manager",
-        "python",
-        "lua",
+        "universal",
+        "multi-language",
         "cross-language",
+        "python",
+        "javascript",
+        "go",
+        "rust",
+        "c",
+        "java",
+        "php",
+        "ruby",
+        "perl",
+        "bash",
+        "lua",
         "cli",
         "lightweight",
         "desktop",
         "applications",
         "manifest",
         "dependency",
+        "template",
+        "runner",
     ],
     
     # Lisans

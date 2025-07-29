@@ -1,6 +1,7 @@
 import os
 import json
 import subprocess
+import mimetypes
 from typing import Dict, Callable, Optional, Tuple
 from package_registry import get_manifest
 
@@ -70,6 +71,220 @@ class Love2DRunner(LanguageRunner):
         except Exception as e:
             return False, f"Çalıştırma hatası: {str(e)}"
 
+class UniversalRunner(LanguageRunner):
+    """Evrensel dil çalıştırıcısı - herhangi bir dili çalıştırabilir"""
+    
+    def __init__(self):
+        super().__init__("Universal", "universal", "")
+    
+    def run(self, entry_file: str, app_path: str) -> Tuple[bool, str]:
+        """
+        Dosya türüne göre uygun komutu bulur ve çalıştırır
+        
+        Args:
+            entry_file: Giriş dosyası
+            app_path: Uygulama dizini
+            
+        Returns:
+            (success, error_message)
+        """
+        try:
+            entry_path = os.path.join(app_path, entry_file)
+            
+            # Dosya türünü tespit et
+            file_type = self._detect_file_type(entry_path)
+            command = self._get_command_for_file_type(file_type, entry_file)
+            
+            if not command:
+                return False, f"Dosya türü için uygun komut bulunamadı: {file_type}"
+            
+            print(f"🔍 Tespit edilen tür: {file_type}")
+            print(f"🚀 Çalıştırılan komut: {command[0]}")
+            
+            # Komutu çalıştır
+            result = subprocess.run(command, 
+                                  cwd=app_path, 
+                                  capture_output=False)
+            
+            # Eğer derleme komutuysa (C, C++, Fortran, Pascal), çalıştırılabilir dosyayı çalıştır
+            if file_type in ['c', 'cpp', 'fortran', 'pascal'] and result.returncode == 0:
+                executable_name = 'output'
+                if os.path.exists(os.path.join(app_path, executable_name)):
+                    print(f"🚀 Çalıştırılabilir dosya çalıştırılıyor: {executable_name}")
+                    exec_result = subprocess.run([f'./{executable_name}'], 
+                                               cwd=app_path, 
+                                               capture_output=False)
+                    return exec_result.returncode == 0, ""
+            
+            return result.returncode == 0, ""
+            
+        except Exception as e:
+            return False, f"Evrensel çalıştırma hatası: {str(e)}"
+    
+    def _detect_file_type(self, file_path: str) -> str:
+        """Dosya türünü tespit eder"""
+        if not os.path.exists(file_path):
+            return "unknown"
+        
+        # Dosya uzantısına göre tespit
+        _, ext = os.path.splitext(file_path)
+        ext = ext.lower()
+        
+        # MIME türü tespiti
+        mime_type, _ = mimetypes.guess_type(file_path)
+        
+        # Shebang satırını kontrol et
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                first_line = f.readline().strip()
+                if first_line.startswith('#!'):
+                    return "script"
+        except:
+            pass
+        
+        # Uzantıya göre tespit
+        extension_map = {
+            '.py': 'python',
+            '.lua': 'lua',
+            '.js': 'javascript',
+            '.ts': 'typescript',
+            '.dart': 'dart',
+            '.go': 'go',
+            '.rs': 'rust',
+            '.java': 'java',
+            '.c': 'c',
+            '.cpp': 'cpp',
+            '.cs': 'csharp',
+            '.php': 'php',
+            '.rb': 'ruby',
+            '.pl': 'perl',
+            '.sh': 'bash',
+            '.ps1': 'powershell',
+            '.r': 'r',
+            '.swift': 'swift',
+            '.kt': 'kotlin',
+            '.scala': 'scala',
+            '.clj': 'clojure',
+            '.hs': 'haskell',
+            '.ml': 'ocaml',
+            '.f90': 'fortran',
+            '.pas': 'pascal',
+            '.bas': 'basic',
+            '.vbs': 'vbscript',
+            '.bat': 'batch',
+            '.exe': 'executable',
+            '.app': 'macos_app',
+            '.jar': 'java_jar',
+            '.class': 'java_class'
+        }
+        
+        return extension_map.get(ext, 'unknown')
+    
+    def _get_command_for_file_type(self, file_type: str, entry_file: str) -> Optional[list]:
+        """Dosya türüne göre uygun komutu döndürür"""
+        
+        # Bilinen komutlar
+        commands = {
+            'python': ['python', entry_file],
+            'lua': ['lua', entry_file],
+            'javascript': ['node', entry_file],
+            'typescript': ['ts-node', entry_file],
+            'dart': ['dart', entry_file],
+            'go': ['go', 'run', entry_file],
+            'rust': ['cargo', 'run'],
+            'java': ['java', entry_file],
+            'c': ['gcc', entry_file, '-o', 'output'],
+            'cpp': ['g++', entry_file, '-o', 'output'],
+            'csharp': ['dotnet', 'run'],
+            'php': ['php', entry_file],
+            'ruby': ['ruby', entry_file],
+            'perl': ['perl', entry_file],
+            'bash': ['bash', entry_file],
+            'powershell': ['powershell', '-File', entry_file],
+            'r': ['Rscript', entry_file],
+            'swift': ['swift', entry_file],
+            'kotlin': ['kotlin', entry_file],
+            'scala': ['scala', entry_file],
+            'clojure': ['clojure', entry_file],
+            'haskell': ['runhaskell', entry_file],
+            'ocaml': ['ocaml', entry_file],
+            'fortran': ['gfortran', entry_file, '-o', 'output'],
+            'pascal': ['fpc', entry_file],
+            'basic': ['basic', entry_file],
+            'vbscript': ['cscript', entry_file],
+            'batch': ['cmd', '/c', entry_file],
+            'script': ['bash', entry_file],  # Shebang varsa bash ile çalıştır
+            'executable': [f'./{entry_file}'],
+            'macos_app': ['open', entry_file],
+            'java_jar': ['java', '-jar', entry_file],
+            'java_class': ['java', entry_file.replace('.class', '')]
+        }
+        
+        return commands.get(file_type)
+
+class MultiLanguageRunner(LanguageRunner):
+    """Çoklu dil uygulamaları için özel runner"""
+    
+    def __init__(self):
+        super().__init__("Multi-Language", "multi", "")
+    
+    def run(self, entry_file: str, app_path: str) -> Tuple[bool, str]:
+        """
+        Çoklu dil uygulamasını çalıştırır
+        
+        Args:
+            entry_file: Ana giriş dosyası
+            app_path: Uygulama dizini
+            
+        Returns:
+            (success, error_message)
+        """
+        try:
+            # Manifest'i oku
+            manifest_path = os.path.join(app_path, "manifest.json")
+            with open(manifest_path, 'r', encoding='utf-8') as f:
+                manifest = json.load(f)
+            
+            if 'languages' not in manifest:
+                return False, "Çoklu dil manifest formatı geçersiz"
+            
+            languages = manifest['languages']
+            run_order = manifest.get('run_order', list(languages.keys()))
+            
+            print(f"🚀 Çoklu dil uygulaması başlatılıyor...")
+            print(f"📋 Çalıştırma sırası: {', '.join(run_order)}")
+            
+            # Her dili sırayla çalıştır
+            for lang_name in run_order:
+                if lang_name not in languages:
+                    print(f"⚠️  {lang_name} dili bulunamadı, atlanıyor")
+                    continue
+                
+                lang_config = languages[lang_name]
+                lang_entry = lang_config['entry']
+                lang_path = os.path.join(app_path, lang_entry)
+                
+                print(f"🔄 {lang_name} başlatılıyor: {lang_entry}")
+                
+                # Dile göre runner bul
+                runner = get_runner_for_language(lang_name)
+                if not runner:
+                    print(f"⚠️  {lang_name} için runner bulunamadı, atlanıyor")
+                    continue
+                
+                # Arka planda çalıştır
+                success, error = runner.run(lang_entry, app_path)
+                if not success:
+                    print(f"❌ {lang_name} başlatılamadı: {error}")
+                    return False, f"{lang_name} hatası: {error}"
+                
+                print(f"✅ {lang_name} başarıyla başlatıldı")
+            
+            return True, "Çoklu dil uygulaması başarıyla çalıştırıldı"
+            
+        except Exception as e:
+            return False, f"Çoklu dil çalıştırma hatası: {str(e)}"
+
 # Desteklenen diller için runner'lar
 LANGUAGE_RUNNERS: Dict[str, LanguageRunner] = {
     'python': LanguageRunner('Python', 'python', '.py'),
@@ -82,7 +297,9 @@ LANGUAGE_RUNNERS: Dict[str, LanguageRunner] = {
     'bash': LanguageRunner('Bash', 'bash', '.sh'),
     'perl': LanguageRunner('Perl', 'perl', '.pl'),
     'ruby': LanguageRunner('Ruby', 'ruby', '.rb'),
-    'php': LanguageRunner('PHP', 'php', '.php')
+    'php': LanguageRunner('PHP', 'php', '.php'),
+    'multi': MultiLanguageRunner(),  # Çoklu dil desteği
+    'universal': UniversalRunner()  # Evrensel dil desteği
 }
 
 def get_runner_for_language(language: str) -> Optional[LanguageRunner]:
@@ -144,15 +361,25 @@ def run_app(app_name: str) -> bool:
     runner = get_runner_for_language(language)
     
     if not runner:
-        supported = ', '.join(LANGUAGE_RUNNERS.keys())
-        print(f"Hata: Desteklenmeyen dil '{language}'. Desteklenen diller: {supported}")
-        return False
+        # Eğer özel runner bulunamazsa, evrensel runner'ı dene
+        print(f"⚠️  '{language}' için özel runner bulunamadı, evrensel runner deneniyor...")
+        runner = get_runner_for_language('universal')
+        
+        if not runner:
+            supported = ', '.join([k for k in LANGUAGE_RUNNERS.keys() if k != 'universal'])
+            print(f"Hata: Desteklenmeyen dil '{language}'. Desteklenen diller: {supported}")
+            return False
     
     # Love2D için özel kontrol
     if language == 'love2d':
         # Love2D için entry dosyası kontrolü gerekmez, klasör yeterli
         if not os.path.exists(app_path):
             print(f"Hata: Uygulama klasörü bulunamadı: {app_path}")
+            return False
+    elif language == 'universal':
+        # Evrensel runner için entry dosyası kontrolü
+        if not os.path.exists(entry_path):
+            print(f"Hata: Giriş dosyası bulunamadı: {entry_path}")
             return False
     else:
         # Diğer diller için entry dosyası kontrolü

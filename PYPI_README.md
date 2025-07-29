@@ -27,24 +27,10 @@
 - **Sistem Tanılaması**: `clapp doctor`
 - **Akıllı Arama**: `clapp search`
 
-### 🔒 **Güvenlik ve Güvenilirlik**
-- **Güvenli Çalıştırma**: Sadece bilinen komutlar
-- **Manifest Doğrulama**: JSON şema kontrolü
-- **Bağımlılık Çözümleme**: Güvenli paket yönetimi
-- **Cache Yönetimi**: Performans optimizasyonu
-
 ## 📦 Kurulum
 
-### PyPI'dan Kurulum
 ```bash
 pip install clapp-pm
-```
-
-### Geliştirici Kurulumu
-```bash
-git clone https://github.com/mburakmmm/clapp.git
-cd clapp
-pip install -e .
 ```
 
 ## 🎯 Hızlı Başlangıç
