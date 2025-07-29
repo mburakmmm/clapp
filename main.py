@@ -224,15 +224,7 @@ def main():
     cache_parser.add_argument('--urls', nargs='+', help='İndirilecek URL\'ler (download için)')
     cache_parser.add_argument('--dest', help='Hedef dizin (download için)')
     
-    # Akıllı arama komutları
-    search_parser = subparsers.add_parser('search', help='Akıllı arama')
-    search_parser.add_argument('query', nargs='?', help='Arama sorgusu')
-    search_parser.add_argument('--suggestions', action='store_true', help='Arama önerileri')
-    search_parser.add_argument('--analytics', action='store_true', help='Arama analitikleri')
-    search_parser.add_argument('--clear-history', action='store_true', help='Arama geçmişini temizle')
-    search_parser.add_argument('--language', help='Dil filtresi')
-    search_parser.add_argument('--category', help='Kategori filtresi')
-    search_parser.add_argument('--sort', choices=['relevance', 'name', 'version', 'language'], default='relevance', help='Sıralama')
+
     
     # dependency komutu (yeni)
     dependency_parser = subparsers.add_parser('dependency', help='Bağımlılık yönetimi')
