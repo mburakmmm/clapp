@@ -94,7 +94,6 @@ def main():
 
 🛠️  Sistem Komutları:
   clapp doctor                  # Kapsamlı sistem tanılaması
-  clapp doctor                  # Kapsamlı sistem tanılaması
   clapp clean                   # Geçici dosyaları temizle
   clapp where hello-python      # Uygulama konumunu göster
   clapp version                 # Sürüm bilgilerini göster
@@ -109,7 +108,7 @@ def main():
     )
     
     # Alt komutlar
-    subparsers = parser.add_subparsers(dest='command', help='Mevcut komutlar')
+    subparsers = parser.add_subparsers(dest='command')
     
     # run komutu
     run_parser = subparsers.add_parser('run', help='Yüklü bir uygulamayı çalıştır')
