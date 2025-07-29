@@ -99,11 +99,11 @@ setup(
         "requests>=2.31.0",
         "typing-extensions>=4.0.0; python_version<'3.10'",
         "tqdm>=4.0.0",
-        "packaging>=23.0",
     ],
     
-    # Ek gereksinimler
+    # Opsiyonel gereksinimler
     extras_require={
+        "packaging": ["packaging>=23.0"],
         "dev": [
             "pytest>=7.0.0",
             "black>=22.0.0",

@@ -39,7 +39,12 @@ except ImportError:
     def parse_version(version_string: str) -> SimpleVersion:
         return SimpleVersion(version_string)
     
-    pkg_version.parse = parse_version
+    # Fallback için pkg_version modülü oluştur
+    class PkgVersion:
+        def __init__(self):
+            self.parse = parse_version
+    
+    pkg_version = PkgVersion()
 from datetime import datetime, timezone
 
 class VersionManager:
