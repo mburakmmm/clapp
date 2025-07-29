@@ -29,7 +29,7 @@ from info_command import show_app_info
 from validate_command import validate_app_folder
 from doctor_command import run_doctor
 from clean_command import run_clean
-from where_command import locate_app_path, list_all_app_locations
+from where_command import locate_app_path, list_all_app_locations, handle_where_command
 from version_command import print_version, print_detailed_version
 
 # Yeni güvenlik ve performans modülleri
@@ -365,16 +365,10 @@ def main():
             sys.exit(0 if success else 1)
         
         elif args.command == 'where':
-            if args.app_name:
-                if args.open:
-                    from where_command import open_app_location
-                    success = open_app_location(args.app_name)
-                else:
-                    success = locate_app_path(args.app_name, args.check_entry)
-                sys.exit(0 if success else 1)
-            else:
-                success = list_all_app_locations()
-                sys.exit(0 if success else 1)
+            success, message = handle_where_command(args)
+            if not success:
+                print(f"❌ {message}")
+            sys.exit(0 if success else 1)
         
 
         

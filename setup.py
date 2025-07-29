@@ -86,7 +86,6 @@ setup(
         "new_command",
         "update_command",
         "platform_utils",
-        "where_command",
     ],
     
     # Paket verileri
